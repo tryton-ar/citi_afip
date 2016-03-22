@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<form string="Informativo de Compras y Ventas RG 3685" col="2">
+    <label name="month"/>
+    <field name="month"/>
+    <label name="year"/>
+    <field name="year"/>
+</form>
