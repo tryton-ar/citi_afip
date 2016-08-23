@@ -8,6 +8,8 @@ from trytond.pool import Pool, PoolMeta
 from decimal import Decimal
 import datetime
 import calendar
+import logging
+logger = logging.getLogger(__name__)
 
 __all__ = ['CitiExportar', 'CitiStart', 'CitiWizard']
 __metaclass__ = PoolMeta
@@ -94,17 +96,17 @@ class CitiStart(ModelView):
     'CITI Start'
     __name__ = 'citi.afip.start'
     month = fields.Selection(MONTHS,u'Month', sort=False, required=True)
+    #period = fields.Many2One('account.period', 'Period', required=True)
     year = fields.Char(u'Year', required=True, size=4)
 
 
 class CitiExportar(ModelView):
     'Exportar'
     __name__ = 'citi.afip.exportar'
-    comprobante_compras = fields.Binary('Comprobante compras', readonly=True, filename='REGINFO_CV_COMPRAS_CBTE.TXT')
-    alicuota_compras = fields.Binary('Alicuota compras', readonly=True, filename='REGINFO_CV_COMPRAS_ALICUOTAS.TXT')
-    comprobante_ventas = fields.Binary('Comprobante ventas', readonly=True, filename='REGINFO_CV_VENTAS_CBTE.TXT')
-    alicuota_ventas = fields.Binary('Alicuota ventas', readonly=True, filename='REGINFO_CV_VENTAS_ALICUOTAS.TXT')
-    message = fields.Text('Message', readonly=True)
+    comprobante_compras = fields.Binary('Comprobante compras', readonly=True)
+    alicuota_compras = fields.Binary('Alicuota compras', readonly=True)
+    comprobante_ventas = fields.Binary('Comprobante ventas', readonly=True)
+    alicuota_ventas = fields.Binary('Alicuota ventas', readonly=True)
 
 
 class CitiWizard(Wizard):
@@ -130,17 +132,26 @@ class CitiWizard(Wizard):
         return res
 
     def default_exportar(self, fields):
+        comprobante_compras = self.exportar.comprobante_compras
+        alicuota_compras = self.exportar.alicuota_compras
+        comprobante_ventas = self.exportar.comprobante_ventas
+        alicuota_ventas = self.exportar.alicuota_ventas
+
+        self.exportar.comprobante_compras = False
+        self.exportar.alicuota_compras = False
+        self.exportar.comprobante_ventas = False
+        self.exportar.alicuota_ventas = False
+
         res = {
-            'message': self.exportar.message,
-            'comprobante_compras': self.exportar.comprobante_compras,
-            'alicuota_compras': self.exportar.alicuota_compras,
-            'comprobante_ventas': self.exportar.comprobante_ventas,
-            'alicuota_ventas': self.exportar.alicuota_ventas,
+            'comprobante_compras': comprobante_compras,
+            'alicuota_compras': alicuota_compras,
+            'comprobante_ventas': comprobante_ventas,
+            'alicuota_ventas': alicuota_ventas,
         }
         return res
 
     def transition_exportar_citi(self):
-        print '>>> exportar CITI REG3685 ...'
+        logger.info('exportar CITI REG3685')
         self.exportar.message = u''
         year = int(self.start.year)
         month = int(self.start.month)
@@ -156,7 +167,7 @@ class CitiWizard(Wizard):
 
 
     def export_citi_alicuota_ventas(self, start_date, end_date):
-        print '>>> exportar CITI REG3685 Alicuota Ventas ...'
+        logger.info('exportar CITI REG3685 Alicuota Ventas')
 
         pool = Pool()
         Invoice = pool.get('account.invoice')
@@ -180,7 +191,7 @@ class CitiWizard(Wizard):
             for invoice_line in invoice.lines:
                 if invoice_line.invoice_taxes is not ():
                     for invoice_tax in invoice_line.invoice_taxes:
-                        if invoice_tax.tax.group.code == 'IVA':
+                        if 'IVA' in invoice_tax.tax.group.code:
                             alicuota_id = str(invoice_tax.tax.sequence).rjust(4,'0')
                             importe_neto_gravado = invoice_line.amount
                             impuesto_liquidado = invoice_line.amount * invoice_tax.tax.rate
@@ -189,11 +200,12 @@ class CitiWizard(Wizard):
                             lines += tipo_comprobante + punto_de_venta + numero_comprobante + \
                                     importe_neto_gravado + alicuota_id + impuesto_liquidado + '\r\n'
 
-        self.exportar.alicuota_ventas = buffer(lines.encode())
-        self.exportar.message = self.exportar.message + u'Se ha generado el archivo alicuota de ventas.\n'
+        logger.info(u'Comienza attach alicuota de venta')
+        self.exportar.alicuota_ventas = unicode(
+            lines).encode('utf-8')
 
     def export_citi_comprobante_ventas(self, start_date, end_date):
-        print '>>> exportar CITI REG3685 Comprobante Ventas ...'
+        logger.info('exportar CITI REG3685 Comprobante Ventas')
         pool = Pool()
         Invoice = pool.get('account.invoice')
         Currency = pool.get('currency.currency')
@@ -225,7 +237,17 @@ class CitiWizard(Wizard):
             numero_comprobante_hasta = invoice.number.split('-')[1].encode().rjust(20, '0')
 
             codigo_documento_comprador = invoice.party.tipo_documento
-            identificacion_comprador = invoice.party.vat_number.rjust(20,'0')
+            if invoice.party.vat_number:
+                # Si tenemos vat_number, entonces tenemos CUIT Argentino
+                # use the Argentina AFIP's global CUIT for the country:
+                identificacion_comprador = invoice.party.vat_number
+            elif invoice.party.vat_number_afip_foreign:
+                # use the VAT number directly
+                identificacion_comprador = invoice.party.vat_number_afip_foreign
+            else:
+                identificacion_comprador = "0" # only "consumidor final"
+
+            identificacion_comprador = identificacion_comprador.rjust(20,'0')
             if codigo_documento_comprador == '99':
                 apellido_nombre_comprador = 'VENTA GLOBAL DIARIA'.ljust(30)
             else:
@@ -249,12 +271,12 @@ class CitiWizard(Wizard):
                         importe_total_lineas_sin_impuesto += line.amount
                 else:
                     for invoice_tax in line.invoice_taxes:
-                        if invoice_tax.tax.group.code == 'IVA':
+                        if 'IVA' in invoice_tax.tax.group.code:
                             #alicuota_id = str(invoice_tax.tax.sequence).rjust(4,'0')
                             alicuotas[str(invoice_tax.tax.sequence)] += 1
-                        if invoice_tax.tax.group.code == 'PERCEPCION':
+                        if 'PERCEPCION' in invoice_tax.tax.group.code:
                             importe_total_impuesto_iibb += line.amount * invoice_tax.tax.rate
-                        if invoice_tax.tax.group.code == 'INTERNO':
+                        if 'INTERNO' in invoice_tax.tax.group.code:
                             importe_total_impuestos_internos += line.amount * invoice_tax.tax.rate
 
             importe_total_lineas_sin_impuesto = Currency.round(invoice.currency, importe_total_lineas_sin_impuesto).to_eng_string().replace('.','').rjust(15,'0')
@@ -304,12 +326,12 @@ class CitiWizard(Wizard):
                 codigo_moneda + tipo_de_cambio + cantidad_alicuotas + codigo_operacion + \
                 otros_atributos + fecha_venc_pago + '\r\n'
 
-        print u'\n>>> Comienza attach comprobante de venta'
-        self.exportar.comprobante_ventas = buffer(lines.encode())
-        self.exportar.message = self.exportar.message + u'Se ha generado el archivo comprobante de ventas.\n'
+        logger.info(u'Comienza attach comprobante de venta')
+        self.exportar.comprobante_ventas = unicode(
+            lines).encode('utf-8')
 
     def export_citi_alicuota_compras(self, start_date, end_date):
-        print '>>> exportar CITI REG3685 Comprobante Compras ...'
+        logger.info('exportar CITI REG3685 Comprobante Compras')
         pool = Pool()
         Invoice = pool.get('account.invoice')
         Currency = pool.get('currency.currency')
@@ -338,7 +360,7 @@ class CitiWizard(Wizard):
                 for invoice_line in invoice.lines:
                     if invoice_line.invoice_taxes is not ():
                         for invoice_tax in invoice_line.invoice_taxes:
-                            if invoice_tax.tax.group.code == 'IVA':
+                            if 'IVA' in invoice_tax.tax.group.code:
                                 alicuota_id = str(invoice_tax.tax.sequence).rjust(4,'0')
                                 importe_neto_gravado = invoice_line.amount
                                 impuesto_liquidado = invoice_line.amount * invoice_tax.tax.rate
@@ -348,11 +370,12 @@ class CitiWizard(Wizard):
                                     codigo_documento_vendedor + cuit_vendedor + importe_neto_gravado + \
                                     alicuota_id + impuesto_liquidado + '\r\n'
 
-        self.exportar.alicuota_compras = buffer(lines.encode())
-        self.exportar.message = self.exportar.message + u'Se ha generado el archivo alicuota de compras.\n'
+        logger.info(u'Comienza attach alicuota de compras')
+        self.exportar.alicuota_compras = unicode(
+            lines).encode('utf-8')
 
     def export_citi_comprobante_compras(self, start_date, end_date):
-        print '>>> exportar CITI REG3685 Comprobante Compras ...'
+        logger.info('exportar CITI REG3685 Comprobante Compras')
         pool = Pool()
         Invoice = pool.get('account.invoice')
         Currency = pool.get('currency.currency')
@@ -408,10 +431,10 @@ class CitiWizard(Wizard):
                             importe_total_lineas_sin_impuesto += line.amount
                     else:
                         for invoice_tax in line.invoice_taxes:
-                            if invoice_tax.tax.group.code == 'IVA':
+                            if 'IVA' in invoice_tax.tax.group.code:
                                 #importe_total_impuesto_iva += invoice_tax.amount
                                 alicuotas[str(invoice_tax.tax.sequence)] += 1
-                            if invoice_tax.tax.group.code == 'PERCEPCION':
+                            if 'PERCEPCION' in invoice_tax.tax.group.code:
                                 importe_total_impuesto_iibb += line.amount * invoice_tax.tax.rate
 
                 importe_total_lineas_sin_impuesto = Currency.round(invoice.currency, importe_total_lineas_sin_impuesto).to_eng_string().replace('.','').rjust(15,'0')
@@ -475,6 +498,6 @@ class CitiWizard(Wizard):
                     otros_atributos + cuit_emisor + denominacion_emisor + iva_comision + '\r\n'
 
 
-        print u'\n>>> Comienza attach comprobante compra'
-        self.exportar.comprobante_compras = buffer(lines.encode())
-        self.exportar.message = self.exportar.message + u'Se ha generado el archivo comprobante de compras.\n'
+        logger.info('Comienza attach comprobante compra')
+        self.exportar.comprobante_compras = unicode(
+            lines).encode('utf-8')
