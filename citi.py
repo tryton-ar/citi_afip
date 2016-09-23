@@ -174,7 +174,7 @@ class CitiWizard(Wizard):
         Currency = pool.get('currency.currency')
         invoices = Invoice.search([
             ('state', 'in', ['posted', 'paid']),
-            ('type', 'in', ['out_invoice','out_credit_note']), # Invoice, Credit Note
+            ('type', '=', 'out'), # Invoice, Credit Note
             ('invoice_date', '>=', start_date),
             ('invoice_date', '<=', end_date),
         ])
@@ -211,7 +211,7 @@ class CitiWizard(Wizard):
         Currency = pool.get('currency.currency')
         invoices = Invoice.search([
             ('state', 'in', ['posted', 'paid']),
-            ('type', 'in', ['out_invoice','out_credit_note']), # Invoice, Credit Note
+            ('type', '=', 'out'), # Invoice, Credit Note
             ('invoice_date', '>=', start_date),
             ('invoice_date', '<=', end_date),
         ])
@@ -337,7 +337,7 @@ class CitiWizard(Wizard):
         Currency = pool.get('currency.currency')
         invoices = Invoice.search([
             ('state', 'in', ['posted', 'paid']),
-            ('type', 'in', ['in_invoice', 'in_credit_note']), # Supplier Invoice, Supplier Credit Note
+            ('type', '=', 'in'), # Supplier Invoice, Supplier Credit Note
             ('invoice_date', '>=', start_date),
             ('invoice_date', '<=', end_date),
         ])
@@ -381,7 +381,7 @@ class CitiWizard(Wizard):
         Currency = pool.get('currency.currency')
         invoices = Invoice.search([
             ('state', 'in', ['posted', 'paid']),
-            ('type', 'in', ['in_invoice', 'in_credit_note']), # Supplier Invoice, Supplier Credit Note
+            ('type', '=', 'in'), # Supplier Invoice, Supplier Credit Note
             ('invoice_date', '>=', start_date),
             ('invoice_date', '<=', end_date),
         ])
