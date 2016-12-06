@@ -347,10 +347,10 @@ class CitiWizard(Wizard):
                 if int(invoice.tipo_comprobante) not in [63,64]: #resumenes bancarios
                     punto_de_venta = invoice.reference.split('-')[0].encode().rjust(5, '0')
                     numero_comprobante = invoice.reference.split('-')[1].encode().rjust(20, '0')
-                    tipo_comprobante = '099'
                 else:
                     punto_de_venta = '0'.rjust(5, '0')
                     numero_comprobante = invoice.reference.encode().rjust(20, '0')
+                    tipo_comprobante = '099'
                 codigo_documento_vendedor = invoice.party.tipo_documento
                 cuit_vendedor = invoice.party.vat_number.rjust(20,'0')
 
@@ -358,7 +358,8 @@ class CitiWizard(Wizard):
                 impuesto_liquidado = Decimal('0')
                 for tax_line in invoice.taxes:
                     if 'iva' in tax_line.tax.group.code.lower():
-                        alicuota_id = str(ALICUOTAS_IVA[tax_line.tax.rate])
+                        alicuota_id = str(ALICUOTAS_IVA[tax_line.tax.rate]).rjust(4, '0')
+                        #alicuota_id = tax_line.base_code.code.rjust(4,'0')
                         importe_neto_gravado = tax_line.base
                         impuesto_liquidado = tax_line.amount
                         importe_neto_gravado = Currency.round(invoice.currency, importe_neto_gravado).to_eng_string().replace('.','').rjust(15,'0')
