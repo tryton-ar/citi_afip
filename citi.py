@@ -6,28 +6,11 @@ from trytond.wizard import Wizard, StateView, StateTransition, Button
 from trytond.model import fields, ModelView
 from trytond.pool import Pool, PoolMeta
 from decimal import Decimal
-import datetime
-import calendar
 import logging
 logger = logging.getLogger(__name__)
 
 __all__ = ['CitiExportar', 'CitiStart', 'CitiWizard']
 __metaclass__ = PoolMeta
-
-MONTHS = [
-    ('1', 'January'),
-    ('2', 'February'),
-    ('3', 'March'),
-    ('4', 'April'),
-    ('5', 'May'),
-    ('6', 'June'),
-    ('7', 'July'),
-    ('8', 'August'),
-    ('9', 'September'),
-    ('10', 'October'),
-    ('11', 'November'),
-    ('12', 'December')
-]
 
 TABLA_MONEDAS = {
     'ARS': 'PES',
@@ -95,23 +78,30 @@ NO_CORRESPONDE = [
 class CitiStart(ModelView):
     'CITI Start'
     __name__ = 'citi.afip.start'
-    month = fields.Selection(MONTHS,u'Month', sort=False, required=True)
-    #period = fields.Many2One('account.period', 'Period', required=True)
-    year = fields.Char(u'Year', required=True, size=4)
+    csv_format = fields.Boolean('CSV format',
+        help='Check this box if you want export to csv format.')
+    period = fields.Many2One('account.period', 'Period', required=True)
 
 
 class CitiExportar(ModelView):
     'Exportar'
     __name__ = 'citi.afip.exportar'
-    comprobante_compras = fields.Binary('Comprobante compras', readonly=True)
-    alicuota_compras = fields.Binary('Alicuota compras', readonly=True)
-    comprobante_ventas = fields.Binary('Comprobante ventas', readonly=True)
-    alicuota_ventas = fields.Binary('Alicuota ventas', readonly=True)
+    comprobante_compras = fields.Binary('Comprobante compras', readonly=True,
+        filename='REGINFO_CV_COMPRAS_CBTE.TXT')
+    alicuota_compras = fields.Binary('Alicuota compras', readonly=True,
+        filename='REGINFO_CV_COMPRAS_ALICUOTAS.TXT')
+    comprobante_ventas = fields.Binary('Comprobante ventas', readonly=True,
+        filename='REGINFO_CV_VENTAS_CBTE.TXT')
+    alicuota_ventas = fields.Binary('Alicuota ventas', readonly=True,
+        filename='REGINFO_CV_VENTAS_ALICUOTAS.TXT')
 
 
 class CitiWizard(Wizard):
     'CitiWizard'
     __name__ = 'citi.afip.wizard'
+
+    _EOL = '\r\n'
+    _SEPARATOR = ';'
 
     start = StateView(
         'citi.afip.start',
@@ -153,20 +143,14 @@ class CitiWizard(Wizard):
     def transition_exportar_citi(self):
         logger.info('exportar CITI REG3685')
         self.exportar.message = u''
-        year = int(self.start.year)
-        month = int(self.start.month)
-        monthrange = calendar.monthrange(year, month)
-        start_date = datetime.date(year, month, 1)
-        end_date = datetime.date(year, month, monthrange[1])
-        self.export_citi_alicuota_compras(start_date, end_date)
-        self.export_citi_comprobante_compras(start_date, end_date)
-        self.export_citi_alicuota_ventas(start_date, end_date)
-        self.export_citi_comprobante_ventas(start_date, end_date)
+        self.export_citi_alicuota_compras()
+        self.export_citi_comprobante_compras()
+        self.export_citi_alicuota_ventas()
+        self.export_citi_comprobante_ventas()
 
         return 'exportar'
 
-
-    def export_citi_alicuota_ventas(self, start_date, end_date):
+    def export_citi_alicuota_ventas(self):
         logger.info('exportar CITI REG3685 Alicuota Ventas')
 
         pool = Pool()
@@ -175,8 +159,8 @@ class CitiWizard(Wizard):
         invoices = Invoice.search([
             ('state', 'in', ['posted', 'paid']),
             ('type', '=', 'out'), # Invoice, Credit Note
-            ('invoice_date', '>=', start_date),
-            ('invoice_date', '<=', end_date),
+            ('invoice_date', '>=', self.start.period.start_date),
+            ('invoice_date', '<=', self.start.period.end_date),
         ])
         lines = ""
         for invoice in invoices:
@@ -197,14 +181,17 @@ class CitiWizard(Wizard):
                             impuesto_liquidado = invoice_line.amount * invoice_tax.tax.rate
                             importe_neto_gravado = Currency.round(invoice.currency, importe_neto_gravado).to_eng_string().replace('.','').rjust(15,'0')
                             impuesto_liquidado = Currency.round(invoice.currency, impuesto_liquidado).to_eng_string().replace('.','').rjust(15,'0')
-                            lines += tipo_comprobante + punto_de_venta + numero_comprobante + \
-                                    importe_neto_gravado + alicuota_id + impuesto_liquidado + '\r\n'
+                            campos = [tipo_comprobante, punto_de_venta, numero_comprobante, \
+                                    importe_neto_gravado, alicuota_id, impuesto_liquidado]
+                            separador = self.start.csv_format and self._SEPARATOR or ''
+                            lines += separador.join(campos) + self._EOL
 
         logger.info(u'Comienza attach alicuota de venta')
+
         self.exportar.alicuota_ventas = unicode(
             lines).encode('utf-8')
 
-    def export_citi_comprobante_ventas(self, start_date, end_date):
+    def export_citi_comprobante_ventas(self):
         logger.info('exportar CITI REG3685 Comprobante Ventas')
         pool = Pool()
         Invoice = pool.get('account.invoice')
@@ -212,8 +199,8 @@ class CitiWizard(Wizard):
         invoices = Invoice.search([
             ('state', 'in', ['posted', 'paid']),
             ('type', '=', 'out'), # Invoice, Credit Note
-            ('invoice_date', '>=', start_date),
-            ('invoice_date', '<=', end_date),
+            ('invoice_date', '>=', self.start.period.start_date),
+            ('invoice_date', '<=', self.start.period.end_date),
         ])
         lines = ""
         for invoice in invoices:
@@ -236,16 +223,25 @@ class CitiWizard(Wizard):
             #    numero_comprobante = 'COE'
             numero_comprobante_hasta = invoice.number.split('-')[1].encode().rjust(20, '0')
 
+            identificacion_comprador = None
             codigo_documento_comprador = invoice.party.tipo_documento
             if invoice.party.vat_number:
                 # Si tenemos vat_number, entonces tenemos CUIT Argentino
                 # use the Argentina AFIP's global CUIT for the country:
                 identificacion_comprador = invoice.party.vat_number
+                codigo_documento_comprador = '80'
             elif invoice.party.vat_number_afip_foreign:
                 # use the VAT number directly
                 identificacion_comprador = invoice.party.vat_number_afip_foreign
             else:
-                identificacion_comprador = "0" # only "consumidor final"
+                for identifier in invoice.party.identifiers:
+                    if identifier.type == 'ar_dni':
+                        identificacion_comprador = identifier.code
+                        codigo_documento_comprador = '96'
+                        break
+                if identificacion_comprador is None:
+                    identificacion_comprador = "0"  # only "consumidor final"
+                    codigo_documento_comprador = '99' # consumidor final
 
             identificacion_comprador = identificacion_comprador.rjust(20,'0')
             if codigo_documento_comprador == '99':
@@ -318,18 +314,21 @@ class CitiWizard(Wizard):
             otros_atributos = '0'.rjust(15, '0')
             fecha_venc_pago = '0'.rjust(8, '0') #Opcional para resto de comprobantes. Obligatorio para liquidacion servicios clase A y B
 
-            lines += fecha_comprobante + tipo_comprobante + punto_de_venta + numero_comprobante + numero_comprobante_hasta + \
-                codigo_documento_comprador + identificacion_comprador + apellido_nombre_comprador + importe_total + \
-                importe_total_lineas_sin_impuesto + percepcion_no_categorizados + importe_operaciones_exentas + importe_total_percepciones + \
-                importe_total_impuesto_iibb + importe_total_percepciones_municipales + importe_total_impuestos_internos + \
-                codigo_moneda + tipo_de_cambio + cantidad_alicuotas + codigo_operacion + \
-                otros_atributos + fecha_venc_pago + '\r\n'
+            campos = [fecha_comprobante, tipo_comprobante, punto_de_venta, numero_comprobante, numero_comprobante_hasta, \
+                codigo_documento_comprador, identificacion_comprador, apellido_nombre_comprador, importe_total, \
+                importe_total_lineas_sin_impuesto, percepcion_no_categorizados, importe_operaciones_exentas, importe_total_percepciones, \
+                importe_total_impuesto_iibb, importe_total_percepciones_municipales, importe_total_impuestos_internos, \
+                codigo_moneda, tipo_de_cambio, cantidad_alicuotas, codigo_operacion, \
+                otros_atributos, fecha_venc_pago]
+
+            separador = self.start.csv_format and self._SEPARATOR or ''
+            lines += separador.join(campos) + self._EOL
 
         logger.info(u'Comienza attach comprobante de venta')
         self.exportar.comprobante_ventas = unicode(
             lines).encode('utf-8')
 
-    def export_citi_alicuota_compras(self, start_date, end_date):
+    def export_citi_alicuota_compras(self):
         logger.info('exportar CITI REG3685 Comprobante Compras')
         pool = Pool()
         Invoice = pool.get('account.invoice')
@@ -337,8 +336,8 @@ class CitiWizard(Wizard):
         invoices = Invoice.search([
             ('state', 'in', ['posted', 'paid']),
             ('type', '=', 'in'), # Supplier Invoice, Supplier Credit Note
-            ('invoice_date', '>=', start_date),
-            ('invoice_date', '<=', end_date),
+            ('invoice_date', '>=', self.start.period.start_date),
+            ('invoice_date', '<=', self.start.period.end_date),
         ])
         lines = ""
         for invoice in invoices:
@@ -365,15 +364,18 @@ class CitiWizard(Wizard):
                                 impuesto_liquidado = invoice_line.amount * invoice_tax.tax.rate
                                 importe_neto_gravado = Currency.round(invoice.currency, importe_neto_gravado).to_eng_string().replace('.','').rjust(15,'0')
                                 impuesto_liquidado = Currency.round(invoice.currency, impuesto_liquidado).to_eng_string().replace('.','').rjust(15,'0')
-                                lines += tipo_comprobante + punto_de_venta + numero_comprobante + \
-                                    codigo_documento_vendedor + cuit_vendedor + importe_neto_gravado + \
-                                    alicuota_id + impuesto_liquidado + '\r\n'
+                                campos = [tipo_comprobante, punto_de_venta, numero_comprobante, \
+                                    codigo_documento_vendedor, cuit_vendedor, importe_neto_gravado, \
+                                    alicuota_id, impuesto_liquidado]
+
+                                separador = self.start.csv_format and self._SEPARATOR or ''
+                                lines += separador.join(campos) + self._EOL
 
         logger.info(u'Comienza attach alicuota de compras')
         self.exportar.alicuota_compras = unicode(
             lines).encode('utf-8')
 
-    def export_citi_comprobante_compras(self, start_date, end_date):
+    def export_citi_comprobante_compras(self):
         logger.info('exportar CITI REG3685 Comprobante Compras')
         pool = Pool()
         Invoice = pool.get('account.invoice')
@@ -381,8 +383,8 @@ class CitiWizard(Wizard):
         invoices = Invoice.search([
             ('state', 'in', ['posted', 'paid']),
             ('type', '=', 'in'), # Supplier Invoice, Supplier Credit Note
-            ('invoice_date', '>=', start_date),
-            ('invoice_date', '<=', end_date),
+            ('invoice_date', '>=', self.start.period.start_date),
+            ('invoice_date', '<=', self.start.period.end_date),
         ])
 
         lines = ""
@@ -489,12 +491,15 @@ class CitiWizard(Wizard):
                     denominacion_emisor = ' '.rjust(30)
                     iva_comision = '0'.rjust(15, '0')
 
-                lines += fecha_comprobante + tipo_comprobante + punto_de_venta + numero_comprobante + despacho_importacion + \
-                    codigo_documento_vendedor + identificacion_vendedor + apellido_nombre_vendedor + importe_total + \
-                    importe_total_lineas_sin_impuesto + importe_operaciones_exentas + importe_total_impuesto_iva + importe_total_percepciones + \
-                    importe_total_impuesto_iibb + importe_total_percepciones_municipales + importe_total_impuestos_internos + \
-                    codigo_moneda + tipo_de_cambio + cantidad_alicuotas + codigo_operacion + credito_fiscal_computable + \
-                    otros_atributos + cuit_emisor + denominacion_emisor + iva_comision + '\r\n'
+                campos = [fecha_comprobante, tipo_comprobante, punto_de_venta, numero_comprobante, despacho_importacion, \
+                    codigo_documento_vendedor, identificacion_vendedor, apellido_nombre_vendedor, importe_total, \
+                    importe_total_lineas_sin_impuesto, importe_operaciones_exentas, importe_total_impuesto_iva, importe_total_percepciones, \
+                    importe_total_impuesto_iibb, importe_total_percepciones_municipales, importe_total_impuestos_internos, \
+                    codigo_moneda, tipo_de_cambio, cantidad_alicuotas, codigo_operacion, credito_fiscal_computable, \
+                    otros_atributos, cuit_emisor, denominacion_emisor, iva_comision]
+
+                separador = self.start.csv_format and self._SEPARATOR or ''
+                lines += separador.join(campos) + self._EOL
 
 
         logger.info('Comienza attach comprobante compra')
