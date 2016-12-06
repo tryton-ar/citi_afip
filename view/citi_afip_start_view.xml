@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<form string="Informativo de Compras y Ventas RG 3685" col="2">
+<form col="2">
     <label name="period"/>
     <field name="period"/>
     <label name="csv_format"/>

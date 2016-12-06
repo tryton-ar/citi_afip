@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <!-- This file is part of Tryton.  The COPYRIGHT file at the top level of
 this repository contains the full copyright notices and license terms. -->
-<form string="Informativo de Compras y Ventas RG 3685" col="2">
+<form col="2">
     <label name="comprobante_compras"/>
     <field name="comprobante_compras"/>
     <label name="alicuota_compras"/>
