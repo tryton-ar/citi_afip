@@ -243,7 +243,7 @@ class CitiWizard(Wizard):
                     identificacion_comprador = "0"  # only "consumidor final"
                     codigo_documento_comprador = '99' # consumidor final
 
-            identificacion_comprador = identificacion_comprador.rjust(20,'0')
+            identificacion_comprador = identificacion_comprador.strip().rjust(20,'0')
             if codigo_documento_comprador == '99':
                 apellido_nombre_comprador = 'VENTA GLOBAL DIARIA'.ljust(30)
             else:
@@ -352,7 +352,7 @@ class CitiWizard(Wizard):
                     numero_comprobante = invoice.reference.encode().rjust(20, '0')
                     tipo_comprobante = '099'
                 codigo_documento_vendedor = invoice.party.tipo_documento
-                cuit_vendedor = invoice.party.vat_number.rjust(20,'0')
+                cuit_vendedor = invoice.party.vat_number.strip().rjust(20,'0')
 
                 importe_neto_gravado = Decimal('0')
                 impuesto_liquidado = Decimal('0')
@@ -412,7 +412,7 @@ class CitiWizard(Wizard):
                 despacho_importacion = ''.ljust(16)
 
                 codigo_documento_vendedor = invoice.party.tipo_documento
-                identificacion_vendedor = invoice.party.vat_number.rjust(20,'0')
+                identificacion_vendedor = invoice.party.vat_number.strip().rjust(20,'0')
                 s = invoice.party.name[:30].encode('utf8')
                 apellido_nombre_vendedor = "".join(x for x in s if x.isalnum()).ljust(30)
                 importe_total = Currency.round(invoice.currency, invoice.total_amount).to_eng_string().replace('.','').rjust(15,'0')
@@ -483,7 +483,7 @@ class CitiWizard(Wizard):
                 otros_atributos = '0'.rjust(15, '0')
 
                 if int(tipo_comprobante) in [33,58,59,60,63]:
-                    cuit_emisor = invoice.party.vat_number.rjust(11,'0')
+                    cuit_emisor = invoice.party.vat_number.strip().rjust(11,'0')
                     denominacion_emisor = apellido_nombre_vendedor
                     iva_comision = Currency.round(invoice.currency, invoice.total_amount - (invoice.total_amount / Decimal('1.21'))).to_eng_string().replace('.','').rjust(15,'0')
                 else:
