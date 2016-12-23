@@ -283,8 +283,12 @@ class CitiWizard(Wizard):
             importe_total_lineas_sin_impuesto = Currency.round(invoice.currency, importe_total_lineas_sin_impuesto).to_eng_string().replace('.','').rjust(15,'0')
             percepcion_no_categorizados = Currency.round(invoice.currency, percepcion_no_categorizados).to_eng_string().replace('.','').rjust(15,'0')
 
-            if invoice.party.iva_condition == 'exento' or invoice.party.iva_condition == 'no_alcanzado':
-                importe_operaciones_exentas = Currency.round(invoice.currency, invoice.total_amount)
+            # En caso de que en una misma operación se vendan productos
+            # exentos con gravados, la alícuota será la correspondiente a
+            # los productos gravados. En este caso el monto correspondiente a
+            # la parte exenta se consignará en este campo, y la porción
+            # gravada en el campo correspondiente del detalle de alícuotas de IVA.
+            # TODO: agregar tilde para marcar que linea de factura es exenta.
             importe_operaciones_exentas = Currency.round(invoice.currency, importe_operaciones_exentas).to_eng_string().replace('.','').rjust(15,'0')
 
             importe_total_percepciones = Currency.round(invoice.currency, importe_total_percepciones).to_eng_string().replace('.','').rjust(15,'0')
@@ -311,12 +315,13 @@ class CitiWizard(Wizard):
                     codigo_operacion = 'X'
                 elif int(invoice.invoice_type.invoice_type) in NO_CORRESPONDE:
                     codigo_operacion = '0' # No corresponde
-                elif invoice.party.iva_condition == 'exento': # Operacion exenta
-                    codigo_operacion = 'E'
                 else:
                     codigo_operacion = 'N'
             else:
                 codigo_operacion = ' ' # Segun tabla codigo de operaciones.
+                if invoice.party.iva_condition == 'exento': # Operacion exenta
+                    codigo_operacion = 'E'
+
             otros_atributos = '0'.rjust(15, '0')
             fecha_venc_pago = '0'.rjust(8, '0') #Opcional para resto de comprobantes. Obligatorio para liquidacion servicios clase A y B
 
@@ -452,10 +457,7 @@ class CitiWizard(Wizard):
                     importe_total_impuestos_internos += invoice_tax.amount
 
                 importe_total_lineas_sin_impuesto = Currency.round(invoice.currency, importe_total_lineas_sin_impuesto).to_eng_string().replace('.','').rjust(15,'0')
-
-                if invoice.party.iva_condition == 'exento' or invoice.party.iva_condition == 'no_alcanzado':
-                    if int(invoice.tipo_comprobante) not in NO_CORRESPONDE: # COMPROBANTES QUE NO CORESPONDE
-                        importe_operaciones_exentas = Currency.round(invoice.currency, invoice.total_amount)
+                # TODO: agregar tilde para marcar linea de factura exenta.
                 importe_operaciones_exentas = Currency.round(invoice.currency, importe_operaciones_exentas).to_eng_string().replace('.','').rjust(15,'0')
 
                 importe_total_impuesto_iva = Currency.round(invoice.currency, importe_total_impuesto_iva).to_eng_string().replace('.','').rjust(15,'0')
@@ -492,6 +494,9 @@ class CitiWizard(Wizard):
                         codigo_operacion = 'N'
                 else:
                     codigo_operacion = ' ' # Segun tabla codigo de operaciones.
+                    if invoice.party.iva_condition == 'exento': # Operacion exenta
+                        codigo_operacion = 'E'
+
                 credito_fiscal_computable = '0'.rjust(15, '0')
                 otros_atributos = '0'.rjust(15, '0')
 
