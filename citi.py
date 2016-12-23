@@ -319,7 +319,7 @@ class CitiWizard(Wizard):
                     codigo_operacion = 'N'
             else:
                 codigo_operacion = ' ' # Segun tabla codigo de operaciones.
-                if invoice.party.iva_condition == 'exento': # Operacion exenta
+                if invoice.company.party.iva_condition == 'exento': # Operacion exenta
                     codigo_operacion = 'E'
 
             otros_atributos = '0'.rjust(15, '0')
@@ -488,13 +488,11 @@ class CitiWizard(Wizard):
                         codigo_operacion = 'X'
                     elif int(invoice.tipo_comprobante) in NO_CORRESPONDE: # COMPROBANTES QUE NO CORESPONDE
                         codigo_operacion = '0' # No corresponde
-                    elif invoice.party.iva_condition == 'exento': # Operacion exenta
-                        codigo_operacion = 'E'
                     else:
                         codigo_operacion = 'N'
                 else:
                     codigo_operacion = ' ' # Segun tabla codigo de operaciones.
-                    if invoice.party.iva_condition == 'exento': # Operacion exenta
+                    if invoice.company.party.iva_condition == 'exento': # Operacion exenta
                         codigo_operacion = 'E'
 
                 credito_fiscal_computable = '0'.rjust(15, '0')
