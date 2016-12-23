@@ -270,10 +270,15 @@ class CitiWizard(Wizard):
                         if 'iva' in invoice_tax.tax.group.code.lower():
                             iva_id = ALICUOTAS_IVA[invoice_tax.tax.rate]
                             alicuotas[iva_id] += 1
-                        if 'iibb' in invoice_tax.tax.group.code.lower():
-                            importe_total_impuesto_iibb += line.amount * invoice_tax.tax.rate
-                        if 'interno' in invoice_tax.tax.group.code.lower():
-                            importe_total_impuestos_internos += line.amount * invoice_tax.tax.rate
+
+            # calculo total de percepciones
+            for invoice_tax in invoice.taxes:
+                if 'nacional' in invoice_tax.tax.group.code.lower():
+                    importe_total_percepciones += invoice.currency.round(invoice_tax.amount)
+                elif 'iibb' in invoice_tax.tax.group.code.lower():
+                    importe_total_impuesto_iibb += invoice_tax.amount
+                elif 'interno' in invoice_tax.tax.group.code.lower():
+                    importe_total_impuestos_internos += invoice_tax.amount
 
             importe_total_lineas_sin_impuesto = Currency.round(invoice.currency, importe_total_lineas_sin_impuesto).to_eng_string().replace('.','').rjust(15,'0')
             percepcion_no_categorizados = Currency.round(invoice.currency, percepcion_no_categorizados).to_eng_string().replace('.','').rjust(15,'0')
@@ -433,10 +438,18 @@ class CitiWizard(Wizard):
                     else:
                         for invoice_tax in line.invoice_taxes:
                             if 'iva' in invoice_tax.tax.group.code.lower():
-                                importe_total_impuesto_iva += invoice_tax.amount
                                 alicuotas[invoice_tax.base_code.code] += 1
-                            if 'iibb' in invoice_tax.tax.group.code.lower():
-                                importe_total_impuesto_iibb += invoice_tax.amount
+
+            # calculo total de percepciones
+            for invoice_tax in invoice.taxes:
+                if 'iva' in invoice_tax.tax.group.code.lower():
+                    importe_total_impuesto_iva += invoice.currency.round(invoice_tax.amount)
+                elif 'nacional' in invoice_tax.tax.group.code.lower():
+                    importe_total_percepciones += invoice.currency.round(invoice_tax.amount)
+                elif 'iibb' in invoice_tax.tax.group.code.lower():
+                    importe_total_impuesto_iibb += invoice_tax.amount
+                elif 'interno' in invoice_tax.tax.group.code.lower():
+                    importe_total_impuestos_internos += invoice_tax.amount
 
                 importe_total_lineas_sin_impuesto = Currency.round(invoice.currency, importe_total_lineas_sin_impuesto).to_eng_string().replace('.','').rjust(15,'0')
 
