@@ -316,7 +316,7 @@ class CitiWizard(Wizard):
                 elif int(invoice.invoice_type.invoice_type) in NO_CORRESPONDE:
                     codigo_operacion = '0' # No corresponde
                 else:
-                    codigo_operacion = 'N'
+                    codigo_operacion = 'N' # No gravado.
             else:
                 codigo_operacion = ' ' # Segun tabla codigo de operaciones.
                 if invoice.company.party.iva_condition == 'exento': # Operacion exenta
@@ -352,34 +352,32 @@ class CitiWizard(Wizard):
         ])
         lines = ""
         for invoice in invoices:
-            if invoice.tipo_comprobante != None:
-                tipo_comprobante = invoice.tipo_comprobante
-                if int(invoice.tipo_comprobante) not in [63,64]: #resumenes bancarios
-                    punto_de_venta = invoice.reference.split('-')[0].encode().rjust(5, '0')
-                    numero_comprobante = invoice.reference.split('-')[1].encode().rjust(20, '0')
-                else:
-                    punto_de_venta = '0'.rjust(5, '0')
-                    numero_comprobante = invoice.reference.encode().rjust(20, '0')
-                    tipo_comprobante = '099'
-                codigo_documento_vendedor = invoice.party.tipo_documento
-                cuit_vendedor = invoice.party.vat_number.strip().rjust(20,'0')
+            tipo_comprobante = invoice.tipo_comprobante
+            if int(invoice.tipo_comprobante) not in [33, 99, 331, 332]: # Comprobanes que se completan con ceros
+                punto_de_venta = invoice.reference.split('-')[0].encode().rjust(5, '0')
+                numero_comprobante = invoice.reference.split('-')[1].encode().rjust(20, '0')
+            else:
+                punto_de_venta = '0'.rjust(5, '0')
+                numero_comprobante = invoice.reference.encode().rjust(20, '0')
+            codigo_documento_vendedor = invoice.party.tipo_documento
+            cuit_vendedor = invoice.party.vat_number.strip().rjust(20,'0')
 
-                importe_neto_gravado = Decimal('0')
-                impuesto_liquidado = Decimal('0')
-                for tax_line in invoice.taxes:
-                    if 'iva' in tax_line.tax.group.code.lower():
-                        alicuota_id = str(ALICUOTAS_IVA[tax_line.tax.rate]).rjust(4, '0')
-                        #alicuota_id = tax_line.base_code.code.rjust(4,'0')
-                        importe_neto_gravado = tax_line.base
-                        impuesto_liquidado = tax_line.amount
-                        importe_neto_gravado = Currency.round(invoice.currency, importe_neto_gravado).to_eng_string().replace('.','').rjust(15,'0')
-                        impuesto_liquidado = Currency.round(invoice.currency, impuesto_liquidado).to_eng_string().replace('.','').rjust(15,'0')
-                        campos = [tipo_comprobante, punto_de_venta, numero_comprobante, \
-                            codigo_documento_vendedor, cuit_vendedor, importe_neto_gravado, \
-                            alicuota_id, impuesto_liquidado]
+            importe_neto_gravado = Decimal('0')
+            impuesto_liquidado = Decimal('0')
+            for tax_line in invoice.taxes:
+                if 'iva' in tax_line.tax.group.code.lower():
+                    alicuota_id = str(ALICUOTAS_IVA[tax_line.tax.rate]).rjust(4, '0')
+                    #alicuota_id = tax_line.base_code.code.rjust(4,'0')
+                    importe_neto_gravado = tax_line.base
+                    impuesto_liquidado = tax_line.amount
+                    importe_neto_gravado = Currency.round(invoice.currency, importe_neto_gravado).to_eng_string().replace('.','').rjust(15,'0')
+                    impuesto_liquidado = Currency.round(invoice.currency, impuesto_liquidado).to_eng_string().replace('.','').rjust(15,'0')
+                    campos = [tipo_comprobante, punto_de_venta, numero_comprobante, \
+                        codigo_documento_vendedor, cuit_vendedor, importe_neto_gravado, \
+                        alicuota_id, impuesto_liquidado]
 
-                        separador = self.start.csv_format and self._SEPARATOR or ''
-                        lines += separador.join(campos) + self._EOL
+                    separador = self.start.csv_format and self._SEPARATOR or ''
+                    lines += separador.join(campos) + self._EOL
 
         logger.info(u'Comienza attach alicuota de compras')
         self.exportar.alicuota_compras = unicode(
@@ -419,13 +417,12 @@ class CitiWizard(Wizard):
 
             fecha_comprobante = invoice.invoice_date.strftime("%Y%m%d")
             tipo_comprobante = invoice.tipo_comprobante
-            if int(invoice.tipo_comprobante) not in [63,64]: #resumenes bancarios
+            if int(invoice.tipo_comprobante) not in [33, 99, 331, 332]: # Comprobanes que se completan con ceros
                 punto_de_venta = invoice.reference.split('-')[0].encode().rjust(5, '0')
                 numero_comprobante = invoice.reference.split('-')[1].encode().rjust(20, '0')
             else:
                 punto_de_venta = '0'.rjust(5, '0')
                 numero_comprobante = invoice.reference.encode().rjust(20, '0')
-                tipo_comprobante = '099'
 
             despacho_importacion = ''.ljust(16)
 
@@ -501,7 +498,8 @@ class CitiWizard(Wizard):
             if int(tipo_comprobante) in [33,58,59,60,63]:
                 cuit_emisor = invoice.party.vat_number.strip().rjust(11,'0')
                 denominacion_emisor = apellido_nombre_vendedor
-                iva_comision = Currency.round(invoice.currency, invoice.total_amount - (invoice.total_amount / Decimal('1.21'))).to_eng_string().replace('.','').rjust(15,'0')
+                iva_comision = importe_total_impuesto_iva
+                importe_total_impuesto_iva = '0'.rjust(15,'0')
             else:
                 cuit_emisor = '0'.rjust(11, '0')
                 denominacion_emisor = ' '.rjust(30)
