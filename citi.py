@@ -6,6 +6,7 @@ from trytond.wizard import Wizard, StateView, StateTransition, Button
 from trytond.model import fields, ModelView
 from trytond.pool import Pool, PoolMeta
 from decimal import Decimal
+from pysimplesoap.client import SimpleXMLElement
 import logging
 logger = logging.getLogger(__name__)
 
@@ -297,7 +298,12 @@ class CitiWizard(Wizard):
             importe_total_impuestos_internos = Currency.round(invoice.currency, importe_total_impuestos_internos).to_eng_string().replace('.','').rjust(15,'0')
             codigo_moneda = TABLA_MONEDAS[invoice.currency.code]
             if codigo_moneda != 'PES':
-                ctz = Currency.round(invoice.currency, 1 / invoice.currency.rate)
+                for afip_tr in invoice.transactions:
+                    if afip_tr.pyafipws_result == 'A':
+                        request = SimpleXMLElement(afip_tr.pyafipws_xml_request)
+                        ctz = str(request('Moneda_ctz'))
+                        break
+                ctz = Currency.round(invoice.currency, Decimal(ctz))
                 tipo_de_cambio =  str("%.6f" % ctz)
                 tipo_de_cambio = tipo_de_cambio.replace('.','').rjust(10,'0')
             else:
