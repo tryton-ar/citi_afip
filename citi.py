@@ -373,13 +373,22 @@ class CitiWizard(Wizard):
         for invoice in invoices:
             tipo_comprobante = invoice.tipo_comprobante
             if int(invoice.tipo_comprobante) not in [33, 99, 331, 332]: # Comprobanes que se completan con ceros
-                punto_de_venta = invoice.reference.split('-')[0].encode().rjust(5, '0')
-                numero_comprobante = invoice.reference.split('-')[1].encode().rjust(20, '0')
+                punto_de_venta = invoice.reference.split('-')[0] if '-' in ref else ''
+                punto_de_venta = punto_de_venta.encode().rjust(5, '0')
+                #punto_de_venta = invoice.reference.split('-')[0].encode().rjust(5, '0')
+                numero_comprobante = invoice.reference.split('-')[1] if '-' in ref else ''
+                numero_comprobante = numero_comprobante.encode().rjust(20, '0')
+                #numero_comprobante = invoice.reference.split('-')[1].encode().rjust(20, '0')
             else:
                 punto_de_venta = '0'.rjust(5, '0')
                 numero_comprobante = invoice.reference.encode().rjust(20, '0')
             codigo_documento_vendedor = invoice.party.tipo_documento
             cuit_vendedor = invoice.party.vat_number.strip().rjust(20,'0')
+
+            assert int(punto_de_venta) > 0 and int(punto_de_venta) < 9998, ('Punto de venta'
+                ' debe ser mayor o igual a "00001" y menor a "09998"!\n'
+                '- Number: %s\n- Reference: %s\n' % (
+                    invoice.number, invoice.reference))
 
             importe_neto_gravado = Decimal('0')
             impuesto_liquidado = Decimal('0')
