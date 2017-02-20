@@ -372,10 +372,10 @@ class CitiWizard(Wizard):
         for invoice in invoices:
             tipo_comprobante = invoice.tipo_comprobante
             if int(invoice.tipo_comprobante) not in [33, 99, 331, 332]: # Comprobanes que se completan con ceros
-                punto_de_venta = invoice.reference.split('-')[0] if '-' in ref else ''
+                punto_de_venta = invoice.reference.split('-')[0] if '-' in invoice.reference else ''
                 punto_de_venta = punto_de_venta.encode().rjust(5, '0')
                 #punto_de_venta = invoice.reference.split('-')[0].encode().rjust(5, '0')
-                numero_comprobante = invoice.reference.split('-')[1] if '-' in ref else ''
+                numero_comprobante = invoice.reference.split('-')[1] if '-' in invoice.reference else ''
                 numero_comprobante = numero_comprobante.encode().rjust(20, '0')
                 #numero_comprobante = invoice.reference.split('-')[1].encode().rjust(20, '0')
             else:
@@ -425,12 +425,12 @@ class CitiWizard(Wizard):
         lines = ""
         for invoice in invoices:
             alicuotas = {
-                "03": 0,
-                "04": 0,
-                "05": 0,
-                "06": 0,
-                "08": 0,
-                "09": 0,
+                3: 0,
+                4: 0,
+                5: 0,
+                6: 0,
+                8: 0,
+                9: 0,
             }
             cant_alicuota = 0
             # iterar sobre lineas de facturas
@@ -467,7 +467,8 @@ class CitiWizard(Wizard):
                 else:
                     for invoice_tax in line.invoice_taxes:
                         if 'iva' in invoice_tax.tax.group.code.lower():
-                            alicuotas[invoice_tax.base_code.code] += 1
+                            iva_id = ALICUOTAS_IVA[invoice_tax.tax.rate]
+                            alicuotas[iva_id] += 1
 
             # calculo total de percepciones
             for invoice_tax in invoice.taxes:
