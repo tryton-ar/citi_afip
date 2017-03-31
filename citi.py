@@ -436,6 +436,7 @@ class CitiWizard(Wizard):
             # iterar sobre lineas de facturas
             importe_total_lineas_sin_impuesto = Decimal('0') # se calcula
             importe_operaciones_exentas = Decimal('0') # 0
+            total_impuesto_iva = Decimal('0') # se calcula
             importe_total_impuesto_iva = Decimal('0') # se calcula
             importe_total_percepciones = Decimal('0') # 0
             importe_total_impuesto_iibb = Decimal('0') # se calcula
@@ -473,8 +474,9 @@ class CitiWizard(Wizard):
             # calculo total de percepciones
             for invoice_tax in invoice.taxes:
                 if 'iva' in invoice_tax.tax.group.code.lower():
-                    importe_total_impuesto_iva += invoice.currency.round(invoice_tax.amount)
-                elif 'nacional' in invoice_tax.tax.group.code.lower():
+                    #importe_total_impuesto_iva += invoice.currency.round(invoice_tax.amount)
+                    total_impuesto_iva += invoice.currency.round(invoice_tax.amount)
+                if 'nacional' in invoice_tax.tax.group.code.lower():
                     importe_total_percepciones += invoice.currency.round(invoice_tax.amount)
                 elif 'iibb' in invoice_tax.tax.group.code.lower():
                     importe_total_impuesto_iibb += invoice_tax.amount
@@ -485,6 +487,7 @@ class CitiWizard(Wizard):
             # TODO: agregar tilde para marcar linea de factura exenta.
             importe_operaciones_exentas = Currency.round(invoice.currency, importe_operaciones_exentas).to_eng_string().replace('.','').rjust(15,'0')
 
+            # Que caso se completa con != 0?
             importe_total_impuesto_iva = Currency.round(invoice.currency, importe_total_impuesto_iva).to_eng_string().replace('.','').rjust(15,'0')
             importe_total_impuesto_iibb = Currency.round(invoice.currency, importe_total_impuesto_iibb).to_eng_string().replace('.','').rjust(15,'0')
 
@@ -509,10 +512,12 @@ class CitiWizard(Wizard):
 
             cantidad_alicuotas = str(cant_alicuota)
             if cant_alicuota == 0:
+                cantidad_alicuotas = '1'
                 if int(invoice.tipo_comprobante) in [19, 20, 21, 22]: # Factura E
                     codigo_operacion = 'X'
                 elif int(invoice.tipo_comprobante) in NO_CORRESPONDE: # COMPROBANTES QUE NO CORESPONDE
                     codigo_operacion = '0' # No corresponde
+                    cantidad_alicuotas = '0'
                 else:
                     codigo_operacion = 'N' # No alcanzado
             else:
@@ -526,8 +531,7 @@ class CitiWizard(Wizard):
             if int(tipo_comprobante) in [33,58,59,60,63]:
                 cuit_emisor = invoice.party.vat_number.strip().rjust(11,'0')
                 denominacion_emisor = apellido_nombre_vendedor
-                iva_comision = importe_total_impuesto_iva
-                importe_total_impuesto_iva = '0'.rjust(15,'0')
+                iva_comision = Currency.round(invoice.currency, total_impuesto_iva).to_eng_string().replace('.','').rjust(15,'0')
             else:
                 cuit_emisor = '0'.rjust(11, '0')
                 denominacion_emisor = ' '.rjust(30)
