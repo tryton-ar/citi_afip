@@ -7,6 +7,7 @@ from trytond.model import fields, ModelView
 from trytond.pool import Pool, PoolMeta
 from decimal import Decimal
 from pysimplesoap.client import SimpleXMLElement
+from unidecode import unidecode
 import logging
 logger = logging.getLogger(__name__)
 
@@ -313,7 +314,7 @@ class CitiWizard(Wizard):
             if codigo_moneda != 'PES':
                 for afip_tr in invoice.transactions:
                     if afip_tr.pyafipws_result == 'A':
-                        request = SimpleXMLElement(afip_tr.pyafipws_xml_request)
+                        request = SimpleXMLElement(unidecode(afip_tr.pyafipws_xml_request))
                         ctz = str(request('Moneda_ctz'))
                         break
                 ctz = Currency.round(invoice.currency, Decimal(ctz))
