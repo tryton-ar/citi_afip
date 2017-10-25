@@ -185,7 +185,8 @@ class CitiWizard(Wizard):
             importe_neto_gravado = Decimal('0')
             impuesto_liquidado = Decimal('0')
             for tax_line in invoice.taxes:
-                if 'iva' in tax_line.tax.group.code.lower():
+                if (tax_line.tax.group and 'iva' in
+                        tax_line.tax.group.code.lower()):
                     alicuota_id = tax_line.base_code.code.rjust(4,'0')
                     importe_neto_gravado = abs(tax_line.base)
                     impuesto_liquidado = abs(tax_line.amount)
@@ -291,17 +292,21 @@ class CitiWizard(Wizard):
                         importe_total_lineas_sin_impuesto += abs(line.amount)
                 else:
                     for invoice_tax in line.invoice_taxes:
-                        if 'iva' in invoice_tax.tax.group.code.lower():
+                        if (invoice_tax.tax.group and 'iva' in
+                                invoice_tax.tax.group.code.lower()):
                             iva_id = ALICUOTAS_IVA[invoice_tax.tax.rate]
                             alicuotas[iva_id] += 1
 
             # calculo total de percepciones
             for invoice_tax in invoice.taxes:
-                if 'nacional' in invoice_tax.tax.group.code.lower():
+                if (invoice_tax.tax.group and 'nacional' in
+                        invoice_tax.tax.group.code.lower()):
                     importe_total_percepciones += invoice.currency.round(abs(invoice_tax.amount))
-                elif 'iibb' in invoice_tax.tax.group.code.lower():
+                elif (invoice_tax.tax.group and 'iibb' in
+                        invoice_tax.tax.group.code.lower()):
                     importe_total_impuesto_iibb += abs(invoice_tax.amount)
-                elif 'interno' in invoice_tax.tax.group.code.lower():
+                elif (invoice_tax.tax.group and 'interno' in
+                        invoice_tax.tax.group.code.lower()):
                     importe_total_impuestos_internos += abs(invoice_tax.amount)
                 else:
                     percepcion_no_categorizados += abs(invoice_tax.amount)
@@ -403,7 +408,8 @@ class CitiWizard(Wizard):
             importe_neto_gravado = Decimal('0')
             impuesto_liquidado = Decimal('0')
             for tax_line in invoice.taxes:
-                if 'iva' in tax_line.tax.group.code.lower():
+                if (tax_line.tax.group and 'iva' in
+                        tax_line.tax.group.code.lower()):
                     alicuota_id = str(ALICUOTAS_IVA[tax_line.tax.rate]).rjust(4, '0')
                     #alicuota_id = tax_line.base_code.code.rjust(4,'0')
                     importe_neto_gravado = abs(tax_line.base)
@@ -478,20 +484,25 @@ class CitiWizard(Wizard):
                         importe_total_lineas_sin_impuesto += abs(line.amount)
                 else:
                     for invoice_tax in line.invoice_taxes:
-                        if 'iva' in invoice_tax.tax.group.code.lower():
+                        if (invoice_tax.tax.group and 'iva' in
+                                invoice_tax.tax.group.code.lower()):
                             iva_id = ALICUOTAS_IVA[invoice_tax.tax.rate]
                             alicuotas[iva_id] += 1
 
             # calculo total de percepciones
             for invoice_tax in invoice.taxes:
-                if 'iva' in invoice_tax.tax.group.code.lower():
+                if (invoice_tax.tax.group and 'iva' in
+                        invoice_tax.tax.group.code.lower()):
                     #importe_total_impuesto_iva += invoice.currency.round(invoice_tax.amount)
                     total_impuesto_iva += invoice.currency.round(abs(invoice_tax.amount))
-                if 'nacional' in invoice_tax.tax.group.code.lower():
+                if (invoice_tax.tax.group and 'nacional' in
+                        invoice_tax.tax.group.code.lower()):
                     importe_total_percepciones += invoice.currency.round(abs(invoice_tax.amount))
-                elif 'iibb' in invoice_tax.tax.group.code.lower():
+                if (invoice_tax.tax.group and 'iibb' in
+                        invoice_tax.tax.group.code.lower()):
                     importe_total_impuesto_iibb += abs(invoice_tax.amount)
-                elif 'interno' in invoice_tax.tax.group.code.lower():
+                if (invoice_tax.tax.group and 'interno' in
+                        invoice_tax.tax.group.code.lower()):
                     importe_total_impuestos_internos += abs(invoice_tax.amount)
 
             importe_total_lineas_sin_impuesto = Currency.round(invoice.currency, importe_total_lineas_sin_impuesto).to_eng_string().replace('.','').rjust(15,'0')
