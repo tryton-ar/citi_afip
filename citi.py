@@ -299,8 +299,6 @@ class CitiWizard(Wizard):
                 elif (invoice_tax.tax.group and 'interno' in
                         invoice_tax.tax.group.code.lower()):
                     importe_total_impuestos_internos += abs(invoice_tax.amount)
-                else:
-                    percepcion_no_categorizados += abs(invoice_tax.amount)
 
             importe_total_lineas_sin_impuesto = Currency.round(invoice.currency, importe_total_lineas_sin_impuesto).to_eng_string().replace('.','').rjust(15,'0')
             percepcion_no_categorizados = Currency.round(invoice.currency, percepcion_no_categorizados).to_eng_string().replace('.','').rjust(15,'0')
