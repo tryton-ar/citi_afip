@@ -249,10 +249,16 @@ class CitiWizard(Wizard):
             punto_de_venta = invoice.number.split('-')[0].encode().rjust(5, '0')
             if int(punto_de_venta) in COMPROBANTES_EXCLUIDOS:
                 punto_de_venta = ''.rjust(5, '0') # se informan ceros.
-            numero_comprobante = invoice.number.split('-')[1].encode().rjust(20, '0')
-            #if int(punto_de_venta) in [33, 331, 332]:
-            #    numero_comprobante = 'COE'
-            numero_comprobante_hasta = invoice.number.split('-')[1].encode().rjust(20, '0')
+            if ':' in invoice.number:
+                parte_desde = invoice.number.split(':')[0]
+                parte_hasta = invoice.number.split(':')[1]
+                numero_comprobante = parte_desde.split('-')[1].encode().rjust(20, '0')
+                numero_comprobante_hasta = parte_hasta.encode().rjust(20, '0')
+            else:
+                numero_comprobante = invoice.number.split('-')[1].encode().rjust(20, '0')
+                #if int(punto_de_venta) in [33, 331, 332]:
+                #    numero_comprobante = 'COE'
+                numero_comprobante_hasta = invoice.number.split('-')[1].encode().rjust(20, '0')
 
             identificacion_comprador = None
             codigo_documento_comprador = invoice.party.tipo_documento
