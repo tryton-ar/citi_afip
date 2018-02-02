@@ -2,13 +2,15 @@
 #The COPYRIGHT file at the top level of this repository contains
 #the full copyright notices and license terms.
 from trytond.pool import Pool
-from .citi import *
+from . import citi
+from . import pos
 
 def register():
     Pool.register(
-        CitiStart,
-        CitiExportar,
+        pos.Pos,
+        citi.CitiStart,
+        citi.CitiExportar,
         module='citi_afip', type_='model')
     Pool.register(
-        CitiWizard,
+        citi.CitiWizard,
         module='citi_afip', type_='wizard')
