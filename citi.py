@@ -164,6 +164,7 @@ class CitiWizard(Wizard):
             ('type', 'in', ['out_invoice','out_credit_note']), # Invoice, Credit Note
             ('invoice_date', '>=', self.start.period.start_date),
             ('invoice_date', '<=', self.start.period.end_date),
+            ('pos.pos_do_not_report', '=', False),
         ])
         lines = ""
         for invoice in invoices:
@@ -217,6 +218,7 @@ class CitiWizard(Wizard):
             ('type', 'in', ['out_invoice','out_credit_note']), # Invoice, Credit Note
             ('invoice_date', '>=', self.start.period.start_date),
             ('invoice_date', '<=', self.start.period.end_date),
+            ('pos.pos_do_not_report', '=', False),
         ])
         lines = ""
         for invoice in invoices:
