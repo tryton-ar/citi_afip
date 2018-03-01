@@ -181,7 +181,11 @@ class CitiWizard(Wizard):
             punto_de_venta = invoice.number.split('-')[0].encode().rjust(5, '0')
             if int(punto_de_venta) in COMPROBANTES_EXCLUIDOS:
                 punto_de_venta = ''.rjust(5, '0') # se informan ceros.
-            numero_comprobante = invoice.number.split('-')[1].encode().rjust(20, '0')
+            if ':' in invoice.number:
+                parte_desde = invoice.number.split(':')[0]
+                numero_comprobante = parte_desde.split('-')[1].encode().rjust(20, '0')
+            else:
+                numero_comprobante = invoice.number.split('-')[1].encode().rjust(20, '0')
 
             importe_neto_gravado = Decimal('0')
             impuesto_liquidado = Decimal('0')
