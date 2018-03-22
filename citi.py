@@ -44,6 +44,7 @@ ALICUOTAS_IVA = {
     Decimal('0.05'): 8,
     Decimal('0.025'): 9,
     Decimal('0.03'): 8, # IVA RG3337
+    Decimal('0.015'): 8, # IVA RG3337
 }
 
 NO_CORRESPONDE = [
