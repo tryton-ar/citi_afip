@@ -4,4 +4,6 @@
     <field name="period"/>
     <label name="csv_format"/>
     <field name="csv_format"/>
+    <label name="proration"/>
+    <field name="proration"/>
 </form>
