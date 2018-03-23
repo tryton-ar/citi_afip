@@ -94,6 +94,7 @@ class CitiStart(ModelView):
     csv_format = fields.Boolean('CSV format',
         help='Check this box if you want export to csv format.')
     period = fields.Many2One('account.period', 'Period', required=True)
+    proration = fields.Boolean('Prorreatear Crédito Fiscal Computable Global')
 
 
 class CitiExportar(ModelView):
@@ -554,7 +555,10 @@ class CitiWizard(Wizard):
                 if invoice.company.party.iva_condition == 'exento': # Operacion exenta
                     codigo_operacion = 'E'
 
-            credito_fiscal_computable = '0'.rjust(15, '0')
+            if self.start.proration:
+                credito_fiscal_computable = '0'.rjust(15, '0')
+            else:
+                credito_fiscal_computable = Currency.round(invoice.currency, total_impuesto_iva).to_eng_string().replace('.','').rjust(15,'0')
             otros_atributos = '0'.rjust(15, '0')
 
             if int(tipo_comprobante) in [33,58,59,60,63]:
