@@ -94,7 +94,7 @@ class CitiStart(ModelView):
     csv_format = fields.Boolean('CSV format',
         help='Check this box if you want export to csv format.')
     period = fields.Many2One('account.period', 'Period', required=True)
-    proration = fields.Boolean('Prorreatear Crédito Fiscal Computable Global')
+    proration = fields.Boolean(u'Prorreatear Crédito Fiscal Computable Global')
 
 
 class CitiExportar(ModelView):
