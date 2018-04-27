@@ -173,8 +173,7 @@ class CitiWizard(Wizard):
         invoices = Invoice.search([
             ('state', 'in', ['posted', 'paid']),
             ('type', '=', 'out'), # Invoice, Credit Note
-            ('invoice_date', '>=', self.start.period.start_date),
-            ('invoice_date', '<=', self.start.period.end_date),
+            ('move.period', '=', self.start.period),
             ('pos.pos_do_not_report', '=', False),
         ])
         lines = ""
@@ -231,8 +230,7 @@ class CitiWizard(Wizard):
         invoices = Invoice.search([
             ('state', 'in', ['posted', 'paid']),
             ('type', '=', 'out'), # Invoice, Credit Note
-            ('invoice_date', '>=', self.start.period.start_date),
-            ('invoice_date', '<=', self.start.period.end_date),
+            ('move.period', '=', self.start.period),
             ('pos.pos_do_not_report', '=', False),
         ])
         lines = ""
@@ -394,8 +392,7 @@ class CitiWizard(Wizard):
         invoices = Invoice.search([
             ('state', 'in', ['posted', 'paid']),
             ('type', '=', 'in'), # Supplier Invoice, Supplier Credit Note
-            ('invoice_date', '>=', self.start.period.start_date),
-            ('invoice_date', '<=', self.start.period.end_date),
+            ('move.period', '=', self.start.period),
         ])
         lines = ""
         for invoice in invoices:
@@ -447,8 +444,7 @@ class CitiWizard(Wizard):
         invoices = Invoice.search([
             ('state', 'in', ['posted', 'paid']),
             ('type', '=', 'in'), # Supplier Invoice, Supplier Credit Note
-            ('invoice_date', '>=', self.start.period.start_date),
-            ('invoice_date', '<=', self.start.period.end_date),
+            ('move.period', '=', self.start.period),
         ])
 
         lines = ""
