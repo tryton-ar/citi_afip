@@ -166,7 +166,7 @@ class CitiWizard(Wizard):
             ('type', 'in', ['out_invoice','out_credit_note']), # Invoice, Credit Note
             ('move.period', '=', self.start.period),
             ('pos.pos_do_not_report', '=', False),
-        ])
+        ], order=[('invoice_date', 'ASC')])
         lines = ""
         for invoice in invoices:
             tipo_comprobante = invoice.invoice_type.invoice_type.rjust(3,'0')
@@ -223,7 +223,7 @@ class CitiWizard(Wizard):
             ('type', 'in', ['out_invoice','out_credit_note']), # Invoice, Credit Note
             ('move.period', '=', self.start.period),
             ('pos.pos_do_not_report', '=', False),
-        ])
+        ], order=[('invoice_date', 'ASC')])
         lines = ""
         for invoice in invoices:
             alicuotas = {
@@ -384,7 +384,7 @@ class CitiWizard(Wizard):
             ('state', 'in', ['posted', 'paid']),
             ('type', 'in', ['in_invoice', 'in_credit_note']), # Supplier Invoice, Supplier Credit Note
             ('move.period', '=', self.start.period),
-        ])
+        ], order=[('invoice_date', 'ASC')])
         lines = ""
         for invoice in invoices:
             tipo_comprobante = invoice.tipo_comprobante
@@ -437,7 +437,7 @@ class CitiWizard(Wizard):
             ('state', 'in', ['posted', 'paid']),
             ('type', 'in', ['in_invoice', 'in_credit_note']), # Supplier Invoice, Supplier Credit Note
             ('move.period', '=', self.start.period),
-        ])
+        ], order=[('invoice_date', 'ASC')])
 
         lines = ""
         for invoice in invoices:
