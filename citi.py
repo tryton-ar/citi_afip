@@ -180,7 +180,7 @@ class CitiWizard(Wizard):
         for invoice in invoices:
             tipo_comprobante = invoice.invoice_type.invoice_type.rjust(3,'0')
             punto_de_venta = invoice.number.split('-')[0].encode().rjust(5, '0')
-            if int(punto_de_venta) in COMPROBANTES_EXCLUIDOS:
+            if int(tipo_comprobante) in COMPROBANTES_EXCLUIDOS:
                 punto_de_venta = ''.rjust(5, '0') # se informan ceros.
             numero_comprobante = invoice.number.split('-')[1].encode().rjust(20, '0')
 
@@ -243,7 +243,7 @@ class CitiWizard(Wizard):
             fecha_comprobante = invoice.invoice_date.strftime("%Y%m%d")
             tipo_comprobante = invoice.invoice_type.invoice_type.rjust(3,'0')
             punto_de_venta = invoice.number.split('-')[0].encode().rjust(5, '0')
-            if int(punto_de_venta) in COMPROBANTES_EXCLUIDOS:
+            if int(tipo_comprobante) in COMPROBANTES_EXCLUIDOS:
                 punto_de_venta = ''.rjust(5, '0') # se informan ceros.
             if ':' in invoice.number:
                 parte_desde = invoice.number.split(':')[0]
