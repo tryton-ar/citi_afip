@@ -4,7 +4,7 @@
 
 from trytond.wizard import Wizard, StateView, StateTransition, Button
 from trytond.model import fields, ModelView
-from trytond.pool import Pool, PoolMeta
+from trytond.pool import Pool
 from decimal import Decimal
 from pysimplesoap.client import SimpleXMLElement
 from unidecode import unidecode
@@ -12,7 +12,6 @@ import logging
 logger = logging.getLogger(__name__)
 
 __all__ = ['CitiExportar', 'CitiStart', 'CitiWizard']
-__metaclass__ = PoolMeta
 
 TABLA_MONEDAS = {
     'ARS': 'PES',
@@ -94,7 +93,7 @@ class CitiStart(ModelView):
     csv_format = fields.Boolean('CSV format', help='Check this box if you '
         'want export to csv format.')
     period = fields.Many2One('account.period', 'Period', required=True)
-    proration = fields.Boolean(u'Prorreatear Crédito Fiscal Computable Global')
+    proration = fields.Boolean('Prorreatear Crédito Fiscal Computable Global')
 
 
 class CitiExportar(ModelView):
@@ -156,7 +155,7 @@ class CitiWizard(Wizard):
 
     def transition_exportar_citi(self):
         logger.info('exportar CITI REG3685')
-        self.exportar.message = u''
+        self.exportar.message = ''
         self.export_citi_alicuota_compras()
         self.export_citi_comprobante_compras()
         self.export_citi_alicuota_ventas()
@@ -230,9 +229,9 @@ class CitiWizard(Wizard):
                 separador = self.start.csv_format and self._SEPARATOR or ''
                 lines += separador.join(campos) + self._EOL
 
-        logger.info(u'Comienza attach alicuota de venta')
+        logger.info('Comienza attach alicuota de venta')
 
-        self.exportar.alicuota_ventas = unicode(
+        self.exportar.alicuota_ventas = str(
             lines).encode('utf-8')
 
     def export_citi_comprobante_ventas(self):
@@ -388,7 +387,7 @@ class CitiWizard(Wizard):
                 tipo_de_cambio = '0001000000'
 
             # recorrer alicuotas y saber cuantos tipos de alicuotas hay.
-            for key, value in alicuotas.iteritems():
+            for key, value in alicuotas.items():
                 if value != 0:
                     cant_alicuota += 1
 
@@ -423,8 +422,8 @@ class CitiWizard(Wizard):
             separador = self.start.csv_format and self._SEPARATOR or ''
             lines += separador.join(campos) + self._EOL
 
-        logger.info(u'Comienza attach comprobante de venta')
-        self.exportar.comprobante_ventas = unicode(
+        logger.info('Comienza attach comprobante de venta')
+        self.exportar.comprobante_ventas = str(
             lines).encode('utf-8')
 
     def export_citi_alicuota_compras(self):
@@ -483,8 +482,8 @@ class CitiWizard(Wizard):
                     separador = self.start.csv_format and self._SEPARATOR or ''
                     lines += separador.join(campos) + self._EOL
 
-        logger.info(u'Comienza attach alicuota de compras')
-        self.exportar.alicuota_compras = unicode(
+        logger.info('Comienza attach alicuota de compras')
+        self.exportar.alicuota_compras = str(
             lines).encode('utf-8')
 
     def export_citi_comprobante_compras(self):
@@ -611,7 +610,7 @@ class CitiWizard(Wizard):
                 tipo_de_cambio = '0001000000'
 
             # recorrer alicuotas y saber cuantos tipos de alicuotas hay.
-            for key, value in alicuotas.iteritems():
+            for key, value in alicuotas.items():
                 if value != 0:
                     cant_alicuota += 1
 
@@ -665,5 +664,5 @@ class CitiWizard(Wizard):
             lines += separador.join(campos) + self._EOL
 
         logger.info('Comienza attach comprobante compra')
-        self.exportar.comprobante_compras = unicode(
+        self.exportar.comprobante_compras = str(
             lines).encode('utf-8')

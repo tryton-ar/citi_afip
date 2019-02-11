@@ -9,9 +9,8 @@ from trytond.pool import PoolMeta
 __all__ = ['Pos']
 
 
-class Pos:
+class Pos(metaclass=PoolMeta):
     __name__ = 'account.pos'
-    __metaclass__ = PoolMeta
     pos_do_not_report = fields.Boolean('Do not report')
 
     @staticmethod
