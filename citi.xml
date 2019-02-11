@@ -20,6 +20,6 @@ this repository contains the full copyright notices and license terms. -->
         </record>
 
         <menuitem parent="account.menu_reporting" action="wizard_citi_afip"
-            id="menu_account_citi_afip_start" icon="tryton-attachment"/>
+            id="menu_account_citi_afip_start" icon="tryton-export"/>
     </data>
 </tryton>
