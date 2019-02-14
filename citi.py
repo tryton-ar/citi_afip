@@ -100,14 +100,10 @@ class CitiStart(ModelView):
 class CitiExportar(ModelView):
     'Exportar'
     __name__ = 'citi.afip.exportar'
-    comprobante_compras = fields.Binary('Comprobante compras', readonly=True,
-        filename='REGINFO_CV_COMPRAS_CBTE.TXT')
-    alicuota_compras = fields.Binary('Alicuota compras', readonly=True,
-        filename='REGINFO_CV_COMPRAS_ALICUOTAS.TXT')
-    comprobante_ventas = fields.Binary('Comprobante ventas', readonly=True,
-        filename='REGINFO_CV_VENTAS_CBTE.TXT')
-    alicuota_ventas = fields.Binary('Alicuota ventas', readonly=True,
-        filename='REGINFO_CV_VENTAS_ALICUOTAS.TXT')
+    comprobante_compras = fields.Binary('Comprobante compras', readonly=True)
+    alicuota_compras = fields.Binary('Alicuota compras', readonly=True)
+    comprobante_ventas = fields.Binary('Comprobante ventas', readonly=True)
+    alicuota_ventas = fields.Binary('Alicuota ventas', readonly=True)
 
 
 class CitiWizard(Wizard):
@@ -189,7 +185,8 @@ class CitiWizard(Wizard):
             for tax_line in invoice.taxes:
                 if (tax_line.tax.group and 'iva' in
                         tax_line.tax.group.code.lower()):
-                    alicuota_id = tax_line.base_code.code.rjust(4,'0')
+                    alicuota_id = str(ALICUOTAS_IVA[tax_line.tax.rate]).rjust(4, '0')
+                    #alicuota_id = tax_line.base_code.code.rjust(4, '0')
                     importe_neto_gravado = abs(tax_line.base)
                     impuesto_liquidado = abs(tax_line.amount)
                     importe_neto_gravado = Currency.round(invoice.currency, importe_neto_gravado).to_eng_string().replace('.','').rjust(15,'0')
@@ -358,6 +355,8 @@ class CitiWizard(Wizard):
                 elif int(invoice.invoice_type.invoice_type) in NO_CORRESPONDE:
                     cantidad_alicuotas = '0'
                     codigo_operacion = 'N' # No corresponde
+            elif alicuotas[3] > 0:  # alicuota 3 corresponde a IVA 0%.
+                    codigo_operacion = 'E'
             else:
                 codigo_operacion = ' ' # Segun tabla codigo de operaciones.
                 if invoice.company.party.iva_condition == 'exento': # Operacion exenta
@@ -546,6 +545,8 @@ class CitiWizard(Wizard):
                     cantidad_alicuotas = '0'
                 else:
                     codigo_operacion = 'N' # No alcanzado
+            elif alicuotas[3] > 0:  # alicuota 3 corresponde a IVA 0%.
+                    codigo_operacion = 'E'
             else:
                 codigo_operacion = ' ' # Segun tabla codigo de operaciones.
                 if invoice.company.party.iva_condition == 'exento': # Operacion exenta
