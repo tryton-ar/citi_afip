@@ -42,12 +42,24 @@ requires = ['unidecode >= 1.0.23']
 for dep in info.get('depends', []):
     if dep == 'account_invoice_ar':
         requires.append(get_require_version('trytonar_%s' % dep))
+    elif dep == 'party_ar':
+        requires.append(get_require_version('trytonar_%s' % dep))
     elif not re.match(r'(ir|res)(\W|$)', dep):
         requires.append(get_require_version('trytond_%s' % dep))
 requires.append(get_require_version('trytond'))
+requires.append('httplib2')
+requires.append('pyafipws')
+requires.append('pysimplesoap')
 
 tests_require = [get_require_version('proteus')]
-dependency_links = []
+dependency_links = [
+    'https://github.com/tryton-ar/account_invoice_ar/tarball/%s.%s#egg=trytonar_account_invoice_ar-%s.%s' \
+        % (major_version, minor_version, major_version, minor_version),
+    'https://github.com/tryton-ar/party_ar/tarball/%s.%s#egg=trytonar_party_ar-%s.%s' \
+        % (major_version, minor_version, major_version, minor_version),
+    'https://github.com/reingart/pyafipws/tarball/py3k#egg=pyafipws',
+    'https://github.com/pysimplesoap/pysimplesoap/tarball/stable_py3k#egg=pysimplesoap',
+    ]
 
 setup(name=name,
     version=version,
