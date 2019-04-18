@@ -8,6 +8,7 @@ from trytond.pool import Pool
 from decimal import Decimal
 from pysimplesoap.client import SimpleXMLElement
 from unidecode import unidecode
+from unicodedata import normalize
 import logging
 logger = logging.getLogger(__name__)
 
@@ -126,6 +127,26 @@ class CitiWizard(Wizard):
         ])
     exportar_citi = StateTransition()
 
+    @classmethod
+    def strip_accents(cls, text):
+        """
+        Strip accents from input String.
+
+        :param text: The input string.
+        :type text: String.
+
+        :returns: The processed String.
+        :rtype: String.
+        """
+        try:
+            text = unicode(text, 'utf-8')
+        except (TypeError, NameError): # unicode is a default on python 3
+            pass
+        text = normalize('NFD', text)
+        text = text.encode('ascii', 'ignore')
+        text = text.decode("utf-8")
+        return str(text)
+
     def default_start(self, fields):
         res = {}
         return res
@@ -175,16 +196,16 @@ class CitiWizard(Wizard):
         for invoice in invoices:
             tipo_comprobante = invoice.invoice_type.invoice_type.rjust(3, '0')
             punto_de_venta = invoice.number.split(
-                '-')[0].encode().rjust(5, '0')
+                '-')[0].rjust(5, '0')
             if int(tipo_comprobante) in COMPROBANTES_EXCLUIDOS:
                 punto_de_venta = ''.rjust(5, '0')  # se informan ceros.
             if ':' in invoice.number:
                 parte_desde = invoice.number.split(':')[0]
                 numero_comprobante = parte_desde.split(
-                    '-')[1].encode().rjust(20, '0')
+                    '-')[1].rjust(20, '0')
             else:
                 numero_comprobante = invoice.number.split(
-                    '-')[1].encode().rjust(20, '0')
+                    '-')[1].rjust(20, '0')
 
             importe_neto_gravado = Decimal('0')
             impuesto_liquidado = Decimal('0')
@@ -227,9 +248,7 @@ class CitiWizard(Wizard):
                 lines += separador.join(campos) + self._EOL
 
         logger.info('Comienza attach alicuota de venta')
-
-        self.exportar.alicuota_ventas = str(
-            lines).encode('utf-8')
+        self.exportar.alicuota_ventas = lines.encode('utf-8')
 
     def export_citi_comprobante_ventas(self):
         logger.info('exportar CITI REG3685 Comprobante Ventas')
@@ -256,22 +275,22 @@ class CitiWizard(Wizard):
             fecha_comprobante = invoice.invoice_date.strftime("%Y%m%d")
             tipo_comprobante = invoice.invoice_type.invoice_type.rjust(3, '0')
             punto_de_venta = invoice.number.split(
-                '-')[0].encode().rjust(5, '0')
+                '-')[0].rjust(5, '0')
             if int(tipo_comprobante) in COMPROBANTES_EXCLUIDOS:
                 punto_de_venta = ''.rjust(5, '0')  # se informan ceros.
             if ':' in invoice.number:
                 parte_desde = invoice.number.split(':')[0]
                 parte_hasta = invoice.number.split(':')[1]
                 numero_comprobante = parte_desde.split(
-                    '-')[1].encode().rjust(20, '0')
-                numero_comprobante_hasta = parte_hasta.encode().rjust(20, '0')
+                    '-')[1].rjust(20, '0')
+                numero_comprobante_hasta = parte_hasta.rjust(20, '0')
             else:
                 numero_comprobante = invoice.number.split(
-                    '-')[1].encode().rjust(20, '0')
+                    '-')[1].rjust(20, '0')
                 #if int(punto_de_venta) in [33, 331, 332]:
                 #    numero_comprobante = 'COE'
                 numero_comprobante_hasta = invoice.number.split(
-                    '-')[1].encode().rjust(20, '0')
+                    '-')[1].rjust(20, '0')
 
             identificacion_comprador = None
             codigo_documento_comprador = invoice.party.tipo_documento
@@ -299,7 +318,7 @@ class CitiWizard(Wizard):
             if codigo_documento_comprador == '99':
                 apellido_nombre_comprador = 'VENTA GLOBAL DIARIA'.ljust(30)
             else:
-                s = invoice.party.name[:30].encode('utf8')
+                s = self.strip_accents(invoice.party.name[:30])
                 apellido_nombre_comprador = ''.join(
                     x for x in s if x.isalnum()).ljust(30)
 
@@ -320,16 +339,14 @@ class CitiWizard(Wizard):
                 if line.invoice_taxes is ():
                     if int(tipo_comprobante) not in [19, 20, 21, 22]:  # COMPROBANTES QUE NO CORESPONDE
                         importe_total_lineas_sin_impuesto += abs(line.amount)
-                else:
-                    for invoice_tax in line.invoice_taxes:
-                        if (invoice_tax.tax.group and 'iva' in
-                                invoice_tax.tax.group.code.lower()):
-                            iva_id = ALICUOTAS_IVA[invoice_tax.tax.rate]
-                            alicuotas[iva_id] += 1
 
             # calculo total de percepciones
             for invoice_tax in invoice.taxes:
-                if (invoice_tax.tax.group and 'nacional' in
+                if (invoice_tax.tax.group and 'iva' in
+                        invoice_tax.tax.group.code.lower()):
+                    iva_id = ALICUOTAS_IVA[invoice_tax.tax.rate]
+                    alicuotas[iva_id] += 1
+                elif (invoice_tax.tax.group and 'nacional' in
                         invoice_tax.tax.group.code.lower()):
                     importe_total_percepciones += invoice.currency.round(
                         abs(invoice_tax.amount))
@@ -370,18 +387,17 @@ class CitiWizard(Wizard):
                 importe_total_impuestos_internos).to_eng_string().replace('.',
                     '').rjust(15, '0')
             codigo_moneda = TABLA_MONEDAS[invoice.currency.code]
+            ctz = '1.00'
             if codigo_moneda != 'PES':
                 for afip_tr in invoice.transactions:
                     if afip_tr.pyafipws_result == 'A':
                         request = SimpleXMLElement(unidecode(afip_tr.pyafipws_xml_request))
                         ctz = str(request('Moneda_ctz'))
                         break
-                ctz = Currency.round(invoice.currency, Decimal(ctz))
-                tipo_de_cambio =  str("%.6f" % ctz)
-                tipo_de_cambio = tipo_de_cambio.replace('.',
-                    '').rjust(10, '0')
-            else:
-                tipo_de_cambio = '0001000000'
+            ctz = Currency.round(invoice.currency, Decimal(ctz))
+            tipo_de_cambio =  str("%.6f" % ctz)
+            tipo_de_cambio = tipo_de_cambio.replace('.',
+                '').rjust(10, '0')
 
             # recorrer alicuotas y saber cuantos tipos de alicuotas hay.
             for key, value in alicuotas.items():
@@ -422,8 +438,7 @@ class CitiWizard(Wizard):
             lines += separador.join(campos) + self._EOL
 
         logger.info('Comienza attach comprobante de venta')
-        self.exportar.comprobante_ventas = str(
-            lines).encode('utf-8')
+        self.exportar.comprobante_ventas = lines.encode('utf-8')
 
     def export_citi_alicuota_compras(self):
         logger.info('exportar CITI REG3685 Comprobante Compras')
@@ -439,23 +454,15 @@ class CitiWizard(Wizard):
         for invoice in invoices:
             tipo_comprobante = invoice.tipo_comprobante
             if int(invoice.tipo_comprobante) not in COMPROBANTES_EXCLUIDOS:
-                punto_de_venta = invoice.reference.split('-')[0] \
-                    if '-' in invoice.reference else ''
-                punto_de_venta = punto_de_venta.encode().rjust(5, '0')
-                #punto_de_venta = invoice.reference.split('-')[0].encode().rjust(5, '0')
-                numero_comprobante = invoice.reference.split('-')[1] \
-                    if '-' in invoice.reference else ''
-                numero_comprobante = numero_comprobante.encode().rjust(20, '0')
-                #numero_comprobante = invoice.reference.split('-')[1].encode().rjust(20, '0')
+                punto_de_venta = invoice.ref_pos_number.rjust(5, '0')
+                numero_comprobante = invoice.ref_voucher_number.rjust(20, '0')
                 assert int(punto_de_venta) > 0 and int(punto_de_venta) < 9998, ('Punto de venta'
                     ' debe ser mayor o igual a "00001" y menor a "09998"!\n'
                     '- Number: %s\n- Reference: %s\n' % (
                         invoice.number, invoice.reference))
             else:
                 punto_de_venta = '0'.rjust(5, '0')
-                numero_comprobante = invoice.reference.split('-')[1] \
-                    if '-' in invoice.reference else ''
-                numero_comprobante = numero_comprobante.encode().rjust(20, '0')
+                numero_comprobante = invoice.ref_voucher_number.rjust(20, '0')
             codigo_documento_vendedor = invoice.party.tipo_documento
             cuit_vendedor = invoice.party.vat_number.strip().rjust(20,'0')
             importe_neto_gravado = Decimal('0')
@@ -482,8 +489,7 @@ class CitiWizard(Wizard):
                     lines += separador.join(campos) + self._EOL
 
         logger.info('Comienza attach alicuota de compras')
-        self.exportar.alicuota_compras = str(
-            lines).encode('utf-8')
+        self.exportar.alicuota_compras = lines.encode('utf-8')
 
     def export_citi_comprobante_compras(self):
         logger.info('exportar CITI REG3685 Comprobante Compras')
@@ -520,21 +526,18 @@ class CitiWizard(Wizard):
             fecha_comprobante = invoice.invoice_date.strftime("%Y%m%d")
             tipo_comprobante = invoice.tipo_comprobante
             if int(invoice.tipo_comprobante) not in COMPROBANTES_EXCLUIDOS: # se completan con ceros.
-                punto_de_venta = invoice.reference.split(
-                    '-')[0].encode().rjust(5, '0')
-                numero_comprobante = invoice.reference.split(
-                    '-')[1].encode().rjust(20, '0')
+                punto_de_venta = invoice.ref_pos_number.rjust(5, '0')
+                numero_comprobante = invoice.ref_voucher_number.rjust(20, '0')
             else:
                 punto_de_venta = '0'.rjust(5, '0')
-                numero_comprobante = invoice.reference.split(
-                    '-')[1].encode().rjust(20, '0')
+                numero_comprobante = invoice.ref_voucher_number.rjust(20, '0')
 
             despacho_importacion = ''.ljust(16)
 
             codigo_documento_vendedor = invoice.party.tipo_documento
             identificacion_vendedor = invoice.party.vat_number.strip().rjust(
                 20, '0')
-            s = invoice.party.name[:30].encode('utf8')
+            s = self.strip_accents(invoice.party.name[:30])
             apellido_nombre_vendedor = ''.join(
                 x for x in s if x.isalnum()).ljust(30)
             importe_total = Currency.round(invoice.currency,
@@ -546,18 +549,12 @@ class CitiWizard(Wizard):
                 if line.invoice_taxes is ():
                     if int(invoice.tipo_comprobante) not in NO_CORRESPONDE:  # COMPROBANTES QUE NO CORESPONDE
                         importe_total_lineas_sin_impuesto += abs(line.amount)
-                else:
-                    for invoice_tax in line.invoice_taxes:
-                        if (invoice_tax.tax.group and 'iva' in
-                                invoice_tax.tax.group.code.lower()):
-                            iva_id = ALICUOTAS_IVA[invoice_tax.tax.rate]
-                            alicuotas[iva_id] += 1
 
-            # calculo total de percepciones
             for invoice_tax in invoice.taxes:
                 if (invoice_tax.tax.group and 'iva' in
                         invoice_tax.tax.group.code.lower()):
-                    #importe_total_impuesto_iva += invoice.currency.round(invoice_tax.amount)
+                    iva_id = ALICUOTAS_IVA[invoice_tax.tax.rate]
+                    alicuotas[iva_id] += 1
                     total_impuesto_iva += invoice.currency.round(
                         abs(invoice_tax.amount))
                 if (invoice_tax.tax.group and 'nacional' in
@@ -665,5 +662,4 @@ class CitiWizard(Wizard):
             lines += separador.join(campos) + self._EOL
 
         logger.info('Comienza attach comprobante compra')
-        self.exportar.comprobante_compras = str(
-            lines).encode('utf-8')
+        self.exportar.comprobante_compras = lines.encode('utf-8')
