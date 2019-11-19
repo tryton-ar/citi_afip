@@ -43,8 +43,6 @@ ALICUOTAS_IVA = {
     Decimal('0.27'): 6,
     Decimal('0.05'): 8,
     Decimal('0.025'): 9,
-    Decimal('0.03'): 8,  # IVA RG3337
-    Decimal('0.015'): 8,  # IVA RG3337
 }
 
 NO_CORRESPONDE = [
@@ -210,9 +208,8 @@ class CitiWizard(Wizard):
             importe_neto_gravado = Decimal('0')
             impuesto_liquidado = Decimal('0')
             for tax_line in invoice.taxes:
-                if (tax_line.tax.group and 'iva' in
-                        tax_line.tax.group.code.lower()):
-                    alicuota_id = str(ALICUOTAS_IVA[tax_line.tax.rate]).rjust(4, '0')
+                if invoice_tax.tax.group.afip_kind == 'gravado':
+                    alicuota_id = tax_line.tax.iva_code.rjust(4, '0')
                     #alicuota_id = tax_line.base_code.code.rjust(4, '0')
                     importe_neto_gravado = abs(tax_line.base)
                     impuesto_liquidado = abs(tax_line.amount)
@@ -336,25 +333,24 @@ class CitiWizard(Wizard):
             importe_total_impuestos_internos = Decimal('0')  # 0
 
             for line in invoice.lines:
-                if line.invoice_taxes is ():
+                if line.invoice_taxes is () and not line.pyafipws_exento:
                     if int(tipo_comprobante) not in [19, 20, 21, 22]:  # COMPROBANTES QUE NO CORESPONDE
                         importe_total_lineas_sin_impuesto += abs(line.amount)
+                if line.invoice_taxes is () and line.pyafipws_exento:
+                    if int(tipo_comprobante) not in [19, 20, 21, 22]:  # COMPROBANTES QUE NO CORESPONDE
+                        importe_operaciones_exentas += abs(line.amount)
 
             # calculo total de percepciones
             for invoice_tax in invoice.taxes:
-                if (invoice_tax.tax.group and 'iva' in
-                        invoice_tax.tax.group.code.lower()):
-                    iva_id = ALICUOTAS_IVA[invoice_tax.tax.rate]
+                if invoice_tax.tax.group.afip_kind == 'gravado':
+                    iva_id = int(invoice_tax.tax.iva_code)
                     alicuotas[iva_id] += 1
-                elif (invoice_tax.tax.group and 'nacional' in
-                        invoice_tax.tax.group.code.lower()):
+                elif invoice_tax.tax.group.afip_kind == 'nacional':
                     importe_total_percepciones += invoice.currency.round(
                         abs(invoice_tax.amount))
-                elif (invoice_tax.tax.group and 'iibb' in
-                        invoice_tax.tax.group.code.lower()):
+                elif invoice_tax.tax.group.afip_kind == 'provincial':
                     importe_total_impuesto_iibb += abs(invoice_tax.amount)
-                elif (invoice_tax.tax.group and 'interno' in
-                        invoice_tax.tax.group.code.lower()):
+                elif invoice_tax.tax.group.afip_kind == 'interno':
                     importe_total_impuestos_internos += abs(invoice_tax.amount)
 
             importe_total_lineas_sin_impuesto = Currency.round(invoice.currency,
@@ -468,9 +464,8 @@ class CitiWizard(Wizard):
             importe_neto_gravado = Decimal('0')
             impuesto_liquidado = Decimal('0')
             for tax_line in invoice.taxes:
-                if (tax_line.tax.group and 'iva' in
-                        tax_line.tax.group.code.lower()):
-                    alicuota_id = str(ALICUOTAS_IVA[tax_line.tax.rate]).rjust(4, '0')
+                if invoice_tax.tax.group.afip_kind == 'gravado':
+                    alicuota_id = tax_line.tax.iva_code.rjust(4, '0')
                     #alicuota_id = tax_line.base_code.code.rjust(4,'0')
                     importe_neto_gravado = abs(tax_line.base)
                     impuesto_liquidado = abs(tax_line.amount)
@@ -546,26 +541,25 @@ class CitiWizard(Wizard):
 
 
             for line in invoice.lines:
-                if line.invoice_taxes is ():
+                if line.invoice_taxes is () and not line.pyafipws_exento:
                     if int(invoice.tipo_comprobante) not in NO_CORRESPONDE:  # COMPROBANTES QUE NO CORESPONDE
                         importe_total_lineas_sin_impuesto += abs(line.amount)
+                if line.invoice_taxes is () and line.pyafipws_exento:
+                    if int(invoice.tipo_comprobante) not in NO_CORRESPONDE:  # COMPROBANTES QUE NO CORESPONDE
+                        importe_operaciones_exentas += abs(line.amount)
 
             for invoice_tax in invoice.taxes:
-                if (invoice_tax.tax.group and 'iva' in
-                        invoice_tax.tax.group.code.lower()):
-                    iva_id = ALICUOTAS_IVA[invoice_tax.tax.rate]
+                if invoice_tax.tax.group.afip_kind == 'gravado':
+                    iva_id = int(invoice_tax.tax.iva_code)
                     alicuotas[iva_id] += 1
                     total_impuesto_iva += invoice.currency.round(
                         abs(invoice_tax.amount))
-                if (invoice_tax.tax.group and 'nacional' in
-                        invoice_tax.tax.group.code.lower()):
+                elif invoice_tax.tax.group.afip_kind == 'nacional':
                     importe_total_percepciones += invoice.currency.round(
                         abs(invoice_tax.amount))
-                if (invoice_tax.tax.group and 'iibb' in
-                        invoice_tax.tax.group.code.lower()):
+                elif invoice_tax.tax.group.afip_kind == 'provincial':
                     importe_total_impuesto_iibb += abs(invoice_tax.amount)
-                if (invoice_tax.tax.group and 'interno' in
-                        invoice_tax.tax.group.code.lower()):
+                elif invoice_tax.tax.group.afip_kind == 'interno':
                     importe_total_impuestos_internos += abs(invoice_tax.amount)
 
             importe_total_lineas_sin_impuesto = Currency.round(
