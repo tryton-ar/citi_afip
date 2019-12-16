@@ -32,6 +32,7 @@ TABLA_MONEDAS = {
     'TWD': '054',
     'EUR': '060',
     'CNY': '064',
+    'GBP': '021',
 }
 
 ALICUOTAS_IVA = {
