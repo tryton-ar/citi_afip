@@ -209,7 +209,7 @@ class CitiWizard(Wizard):
             importe_neto_gravado = Decimal('0')
             impuesto_liquidado = Decimal('0')
             for tax_line in invoice.taxes:
-                if invoice_tax.tax.group.afip_kind == 'gravado':
+                if tax_line.tax.group.afip_kind == 'gravado':
                     alicuota_id = tax_line.tax.iva_code.rjust(4, '0')
                     #alicuota_id = tax_line.base_code.code.rjust(4, '0')
                     importe_neto_gravado = abs(tax_line.base)
