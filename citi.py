@@ -404,17 +404,14 @@ class CitiWizard(Wizard):
             cantidad_alicuotas = str(cant_alicuota)
             if cant_alicuota == 0:
                 cantidad_alicuotas = '1'
-                if int(invoice.invoice_type.invoice_type) in [19, 20, 21, 22]:  # Factura E
-                    codigo_operacion = 'X'
-                elif int(invoice.invoice_type.invoice_type) in NO_CORRESPONDE:
-                    cantidad_alicuotas = '0'
-                    codigo_operacion = 'N' # No corresponde
-            elif alicuotas[3] > 0:  # alicuota 3 corresponde a IVA 0%.
-                    codigo_operacion = 'E'
+                if int(invoice.invoice_type.invoice_type) in [19, 20, 21, 22]: # Factura E
+                    codigo_operacion = 'X' # Exportaciones del exterior
+                elif int(invoice.invoice_type.invoice_type) in [11, 12, 13, 15, 211, 212, 213]:  # Clase C
+                    codigo_operacion = 'N' # No gravado
+                elif invoice.company.party.iva_condition == 'exento':  # Operacion exenta
+                    codigo_operacion = 'E' # Operaciones exentas
             else:
                 codigo_operacion = ' '  # Segun tabla codigo de operaciones.
-                if invoice.company.party.iva_condition == 'exento':  # Operacion exenta
-                    codigo_operacion = 'E'
 
             otros_atributos = '0'.rjust(15, '0')
             fecha_venc_pago = '0'.rjust(8, '0')  # Opcional para resto de comprobantes. Obligatorio para liquidacion servicios clase A y B
@@ -609,18 +606,16 @@ class CitiWizard(Wizard):
             if cant_alicuota == 0:
                 cantidad_alicuotas = '1'
                 if int(invoice.tipo_comprobante) in [19, 20, 21, 22]: # Factura E
-                    codigo_operacion = 'X'
-                elif int(invoice.tipo_comprobante) in NO_CORRESPONDE: # COMPROBANTES QUE NO CORESPONDE
-                    codigo_operacion = '0' # No corresponde
+                    codigo_operacion = 'X' # Importaciones del exterior
+                elif int(invoice.tipo_comprobante) in NO_CORRESPONDE: # Comprobantes clase C/B
+                    codigo_operacion = 'N' # No gravado
                     cantidad_alicuotas = '0'
+                elif invoice.party.iva_condition == 'exento':  # Operacion exenta
+                    codigo_operacion = 'E' # Operaciones exentas
                 else:
-                    codigo_operacion = 'N' # No alcanzado
-            elif alicuotas[3] > 0:  # alicuota 3 corresponde a IVA 0%.
-                    codigo_operacion = 'E'
+                    codigo_operacion = 'N' # No gravado
             else:
                 codigo_operacion = ' ' # Segun tabla codigo de operaciones.
-                if invoice.company.party.iva_condition == 'exento': # Operacion exenta
-                    codigo_operacion = 'E'
 
             if self.start.proration:
                 credito_fiscal_computable = '0'.rjust(15, '0')
