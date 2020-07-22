@@ -31,14 +31,14 @@ Create company::
     >>> company = get_company()
     >>> tax_identifier = company.party.identifiers.new()
     >>> tax_identifier.type = 'ar_cuit'
-    >>> tax_identifier.code = '11111111113'
+    >>> tax_identifier.code = '30710158254' # gcoop CUIT
     >>> company.party.iva_condition = 'responsable_inscripto'
     >>> company.party.save()
 
 Create fiscal year::
 
     >>> fiscalyear = set_fiscalyear_invoice_sequences(
-    ...     create_fiscalyear(company))
+    ...     create_fiscalyear(company, datetime.date(2019, 1, 1)))
     >>> fiscalyear.click('create_period')
     >>> period = fiscalyear.periods[0]
     >>> period_ids = [p.id for p in fiscalyear.periods]
@@ -66,10 +66,12 @@ Create tax groups::
 Create tax IVA 21%::
 
     >>> customer_tax = create_tax(Decimal('.21'))
-    >>> customer_tax.group = tax_groups['iva']
+    >>> customer_tax.group = tax_groups['gravado']
+    >>> customer_tax.iva_code = '5'
     >>> customer_tax.save()
     >>> supplier_tax = create_tax(Decimal('.21'))
-    >>> supplier_tax.group = tax_groups['iva']
+    >>> supplier_tax.group = tax_groups['gravado']
+    >>> supplier_tax.iva_code = '5'
     >>> supplier_tax.save()
 
 Create parties::
@@ -81,7 +83,7 @@ Create parties::
     >>> supplier.save()
     >>> customer = Party(name='Customer',
     ...     iva_condition='responsable_inscripto',
-    ...     vat_number='22222222226')
+    ...     vat_number='30688555872')
     >>> customer.save()
 
 Create account category::
