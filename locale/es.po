@@ -2,134 +2,78 @@
 msgid ""
 msgstr "Content-Type: text/plain; charset=utf-8\n"
 
+msgctxt "field:account.pos,pos_do_not_report:"
+msgid "Do not report"
+msgstr "No informar"
+
 msgctxt "field:citi.afip.exportar,alicuota_compras:"
 msgid "Alicuota compras"
-msgstr ""
+msgstr "Alícuota compras"
 
 msgctxt "field:citi.afip.exportar,alicuota_ventas:"
 msgid "Alicuota ventas"
-msgstr ""
+msgstr "Alícuota ventas"
 
 msgctxt "field:citi.afip.exportar,comprobante_compras:"
 msgid "Comprobante compras"
-msgstr ""
+msgstr "Comprobante compras"
 
 msgctxt "field:citi.afip.exportar,comprobante_ventas:"
 msgid "Comprobante ventas"
-msgstr ""
+msgstr "Comprobante ventas"
 
-#, fuzzy
 msgctxt "field:citi.afip.exportar,id:"
 msgid "ID"
 msgstr "ID"
 
-msgctxt "field:citi.afip.exportar,message:"
-msgid "Message"
-msgstr "Mensaje"
+msgctxt "field:citi.afip.start,csv_format:"
+msgid "CSV format"
+msgstr "Formato CSV"
 
-#, fuzzy
 msgctxt "field:citi.afip.start,id:"
 msgid "ID"
 msgstr "ID"
 
-#, fuzzy
-msgctxt "field:citi.afip.start,month:"
-msgid "Month"
-msgstr "Mes"
+msgctxt "field:citi.afip.start,period:"
+msgid "Period"
+msgstr "Período"
 
-msgctxt "field:citi.afip.start,year:"
-msgid "Year"
-msgstr "Año"
+msgctxt "field:citi.afip.start,proration:"
+msgid "Prorreatear Crédito Fiscal Computable Global"
+msgstr "Prorreatear Crédito Fiscal Computable Global"
+
+msgctxt "help:citi.afip.start,csv_format:"
+msgid "Check this box if you want export to csv format."
+msgstr "Marque aquí si quiere exportar a formato CSV"
 
 msgctxt "model:citi.afip.exportar,name:"
 msgid "Exportar"
-msgstr ""
+msgstr "Exportar"
 
 msgctxt "model:citi.afip.start,name:"
 msgid "CITI Start"
-msgstr ""
+msgstr "Compras y Ventas RG 3685"
 
 msgctxt "model:ir.action,name:wizard_citi_afip"
 msgid "Compras y Ventas RG 3685"
-msgstr ""
+msgstr "Compras y Ventas RG 3685"
 
 msgctxt "model:ir.ui.menu,name:menu_account_citi_afip_start"
 msgid "Compras y Ventas RG 3685"
-msgstr ""
+msgstr "Compras y Ventas RG 3685"
 
-#, fuzzy
-msgctxt "selection:citi.afip.start,month:"
-msgid "April"
-msgstr "Abril"
-
-#, fuzzy
-msgctxt "selection:citi.afip.start,month:"
-msgid "August"
-msgstr "Agosto"
-
-#, fuzzy
-msgctxt "selection:citi.afip.start,month:"
-msgid "December"
-msgstr "Diciembre"
-
-#, fuzzy
-msgctxt "selection:citi.afip.start,month:"
-msgid "February"
-msgstr "Febrero"
-
-#, fuzzy
-msgctxt "selection:citi.afip.start,month:"
-msgid "January"
-msgstr "Enero"
-
-#, fuzzy
-msgctxt "selection:citi.afip.start,month:"
-msgid "July"
-msgstr "Julio"
-
-#, fuzzy
-msgctxt "selection:citi.afip.start,month:"
-msgid "June"
-msgstr "Junio"
-
-#, fuzzy
-msgctxt "selection:citi.afip.start,month:"
-msgid "March"
-msgstr "Marzo"
-
-#, fuzzy
-msgctxt "selection:citi.afip.start,month:"
-msgid "May"
-msgstr "Mayo"
-
-#, fuzzy
-msgctxt "selection:citi.afip.start,month:"
-msgid "November"
-msgstr "Noviembre"
-
-#, fuzzy
-msgctxt "selection:citi.afip.start,month:"
-msgid "October"
-msgstr "Octubre"
-
-#, fuzzy
-msgctxt "selection:citi.afip.start,month:"
-msgid "September"
-msgstr "Septiembre"
-
-#, fuzzy
 msgctxt "wizard_button:citi.afip.wizard,exportar,end:"
-msgid "Done"
-msgstr "Realizado"
+msgid "Close"
+msgstr "Cerrar"
 
 msgctxt "wizard_button:citi.afip.wizard,exportar,start:"
 msgid "Volver a generar archivos"
-msgstr ""
+msgstr "Volver a generar archivos"
 
 msgctxt "wizard_button:citi.afip.wizard,start,end:"
-msgid "Cancelar"
-msgstr ""
+msgid "Cancel"
+msgstr "Cancelar"
 
 msgctxt "wizard_button:citi.afip.wizard,start,exportar_citi:"
 msgid "Generar archivos"
-msgstr ""
+msgstr "Generar archivos"
