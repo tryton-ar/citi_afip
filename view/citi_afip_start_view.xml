@@ -2,8 +2,12 @@
 <form col="2">
     <label name="period"/>
     <field name="period"/>
-    <label name="csv_format"/>
-    <field name="csv_format"/>
-    <label name="proration"/>
-    <field name="proration"/>
+    <group id="csv_format" colspan="2" col="2">
+        <label name="csv_format"/>
+        <field name="csv_format"/>
+    </group>
+    <group id="proration" colspan="2" col="2">
+        <label name="proration"/>
+        <field name="proration"/>
+    </group>
 </form>
