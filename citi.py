@@ -14,8 +14,6 @@ from trytond.pool import Pool
 
 logger = logging.getLogger(__name__)
 
-__all__ = ['CitiExportar', 'CitiStart', 'CitiWizard']
-
 TABLA_MONEDAS = {
     'ARS': 'PES',
     'USD': 'DOL',

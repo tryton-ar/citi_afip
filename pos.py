@@ -6,8 +6,6 @@
 from trytond.model import fields
 from trytond.pool import PoolMeta
 
-__all__ = ['Pos']
-
 
 class Pos(metaclass=PoolMeta):
     __name__ = 'account.pos'
