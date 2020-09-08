@@ -14,45 +14,16 @@ from trytond.pool import Pool
 
 logger = logging.getLogger(__name__)
 
-TABLA_MONEDAS = {
-    'ARS': 'PES',
-    'USD': 'DOL',
-    'UYU': '011',
-    'BRL': '012',
-    'DKK': '014',
-    'NOK': '015',
-    'CAD': '018',
-    'CHF': '009',
-    'BOB': '031',
-    'COP': '032',
-    'CLP': '033',
-    'HKD': '051',
-    'SGD': '052',
-    'JMD': '053',
-    'TWD': '054',
-    'EUR': '060',
-    'CNY': '064',
-    'GBP': '021',
-    }
-
-ALICUOTAS_IVA = {
-    "No Gravado": 1,
-    "Exento": 2,
-    Decimal('0'): 3,
-    Decimal('0.105'): 4,
-    Decimal('0.21'): 5,
-    Decimal('0.27'): 6,
-    Decimal('0.05'): 8,
-    Decimal('0.025'): 9,
-    }
+_EOL = '\r\n'
+_SEPARATOR = ';'
 
 NO_CORRESPONDE = [
     6,
-    11,
     7,
     8,
     9,
     10,
+    11,
     12,
     13,
     15,
@@ -108,9 +79,6 @@ class CitiExportar(ModelView):
 class CitiWizard(Wizard):
     'CitiWizard'
     __name__ = 'citi.afip.wizard'
-
-    _EOL = '\r\n'
-    _SEPARATOR = ';'
 
     start = StateView('citi.afip.start',
         'citi_afip.citi_afip_start_view', [
@@ -223,8 +191,8 @@ class CitiWizard(Wizard):
                     campos = [tipo_comprobante, punto_de_venta,
                         numero_comprobante, importe_neto_gravado, alicuota_id,
                         impuesto_liquidado]
-                    separador = self.start.csv_format and self._SEPARATOR or ''
-                    lines += separador.join(campos) + self._EOL
+                    separador = self.start.csv_format and _SEPARATOR or ''
+                    lines += separador.join(campos) + _EOL
 
             # factura de exportacion
             # no tiene alicuota, pero se informa con alicuota 0%
@@ -241,8 +209,8 @@ class CitiWizard(Wizard):
                 campos = [tipo_comprobante, punto_de_venta,
                     numero_comprobante, importe_neto_gravado, alicuota_id,
                     impuesto_liquidado]
-                separador = self.start.csv_format and self._SEPARATOR or ''
-                lines += separador.join(campos) + self._EOL
+                separador = self.start.csv_format and _SEPARATOR or ''
+                lines += separador.join(campos) + _EOL
 
         logger.info('Comienza attach alicuota de venta')
         self.exportar.alicuota_ventas = lines.encode('utf-8')
@@ -385,7 +353,7 @@ class CitiWizard(Wizard):
             importe_total_impuestos_internos = Currency.round(invoice.currency,
                 importe_total_impuestos_internos).to_eng_string().replace('.',
                     '').rjust(15, '0')
-            codigo_moneda = TABLA_MONEDAS[invoice.currency.code]
+            codigo_moneda = invoice.currency.afip_code or 'PES'
             ctz = '1.00'
             if codigo_moneda != 'PES':
                 for afip_tr in invoice.transactions:
@@ -437,8 +405,8 @@ class CitiWizard(Wizard):
                 codigo_moneda, tipo_de_cambio, cantidad_alicuotas,
                 codigo_operacion, otros_atributos, fecha_venc_pago]
 
-            separador = self.start.csv_format and self._SEPARATOR or ''
-            lines += separador.join(campos) + self._EOL
+            separador = self.start.csv_format and _SEPARATOR or ''
+            lines += separador.join(campos) + _EOL
 
         logger.info('Comienza attach comprobante de venta')
         self.exportar.comprobante_ventas = lines.encode('utf-8')
@@ -488,8 +456,8 @@ class CitiWizard(Wizard):
                         cuit_vendedor, importe_neto_gravado, alicuota_id,
                         impuesto_liquidado]
 
-                    separador = self.start.csv_format and self._SEPARATOR or ''
-                    lines += separador.join(campos) + self._EOL
+                    separador = self.start.csv_format and _SEPARATOR or ''
+                    lines += separador.join(campos) + _EOL
 
         logger.info('Comienza attach alicuota de compras')
         self.exportar.alicuota_compras = lines.encode('utf-8')
@@ -598,8 +566,7 @@ class CitiWizard(Wizard):
             importe_total_impuestos_internos = Currency.round(
                 invoice.currency, importe_total_impuestos_internos
                 ).to_eng_string().replace('.', '').rjust(15, '0')
-            codigo_moneda = TABLA_MONEDAS[invoice.currency.code]
-            codigo_moneda = TABLA_MONEDAS[invoice.currency.code]
+            codigo_moneda = invoice.currency.afip_code or 'PES'
             if codigo_moneda != 'PES':
                 ctz = Currency.round(invoice.currency,
                     1 / invoice.currency.rate)
@@ -665,8 +632,8 @@ class CitiWizard(Wizard):
                 otros_atributos, cuit_emisor, denominacion_emisor,
                 iva_comision]
 
-            separador = self.start.csv_format and self._SEPARATOR or ''
-            lines += separador.join(campos) + self._EOL
+            separador = self.start.csv_format and _SEPARATOR or ''
+            lines += separador.join(campos) + _EOL
 
         logger.info('Comienza attach comprobante compra')
         self.exportar.comprobante_compras = lines.encode('utf-8')
