@@ -566,7 +566,7 @@ class CitiWizard(Wizard):
             codigo_moneda = invoice.currency.afip_code or 'PES'
             if codigo_moneda != 'PES':
                 ctz = Currency.round(invoice.currency,
-                    1 / invoice.currency.rate)
+                    1 / (invoice.currency.rate or Decimal('1')))
                 tipo_de_cambio = str("%.6f" % ctz)
                 tipo_de_cambio = tipo_de_cambio.replace('.', '').rjust(10, '0')
             else:
