@@ -200,7 +200,7 @@ Create supplier invoices::
     >>> invoice.untaxed_amount
     Decimal('100.00')
     >>> invoice.tax_amount
-    Decimal('0.0')
+    Decimal('0')
     >>> invoice.total_amount
     Decimal('100.00')
 
