@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# This file is part of the ciati_afip module for Tryton.
+# This file is part of the citi_afip module for Tryton.
 # The COPYRIGHT file at the top level of this repository contains
 # the full copyright notices and license terms.
 from decimal import Decimal
@@ -8,8 +8,8 @@ from unidecode import unidecode
 from unicodedata import normalize
 import logging
 
-from trytond.wizard import Wizard, StateView, StateTransition, Button
 from trytond.model import fields, ModelView
+from trytond.wizard import Wizard, StateView, StateTransition, Button
 from trytond.pool import Pool
 
 logger = logging.getLogger(__name__)
@@ -59,17 +59,19 @@ COMPROBANTES_EXCLUIDOS = [
 
 
 class CitiStart(ModelView):
-    'CITI Start'
+    'Compras y Ventas RG 3685'
     __name__ = 'citi.afip.start'
-    csv_format = fields.Boolean('CSV format', help='Check this box if you '
-        'want export to csv format.')
+
+    csv_format = fields.Boolean('CSV format',
+        help='Check this box if you want export to csv format.')
     period = fields.Many2One('account.period', 'Period', required=True)
     proration = fields.Boolean('Prorreatear Crédito Fiscal Computable Global')
 
 
 class CitiExportar(ModelView):
-    'Exportar'
+    'Compras y Ventas RG 3685'
     __name__ = 'citi.afip.exportar'
+
     comprobante_compras = fields.Binary('Comprobante compras', readonly=True)
     alicuota_compras = fields.Binary('Alicuota compras', readonly=True)
     comprobante_ventas = fields.Binary('Comprobante ventas', readonly=True)
@@ -77,7 +79,7 @@ class CitiExportar(ModelView):
 
 
 class CitiWizard(Wizard):
-    'CitiWizard'
+    'Compras y Ventas RG 3685'
     __name__ = 'citi.afip.wizard'
 
     start = StateView('citi.afip.start',
@@ -138,20 +140,18 @@ class CitiWizard(Wizard):
 
     def transition_exportar_citi(self):
         logger.info('exportar CITI REG3685')
-        self.exportar.message = ''
         self.export_citi_alicuota_compras()
         self.export_citi_comprobante_compras()
         self.export_citi_alicuota_ventas()
         self.export_citi_comprobante_ventas()
-
         return 'exportar'
 
     def export_citi_alicuota_ventas(self):
         logger.info('exportar CITI REG3685 Alicuota Ventas')
-
         pool = Pool()
         Invoice = pool.get('account.invoice')
         Currency = pool.get('currency.currency')
+
         invoices = Invoice.search([
             ('state', 'in', ['posted', 'paid']),
             ('type', '=', 'out'),  # Invoice, Credit Note
@@ -161,8 +161,7 @@ class CitiWizard(Wizard):
         lines = ""
         for invoice in invoices:
             tipo_comprobante = invoice.invoice_type.invoice_type.rjust(3, '0')
-            punto_de_venta = invoice.number.split(
-                '-')[0].rjust(5, '0')
+            punto_de_venta = invoice.number.split('-')[0].rjust(5, '0')
             if int(tipo_comprobante) in COMPROBANTES_EXCLUIDOS:
                 punto_de_venta = ''.rjust(5, '0')  # se informan ceros
             if ':' in invoice.number:
@@ -178,7 +177,6 @@ class CitiWizard(Wizard):
             for tax_line in invoice.taxes:
                 if tax_line.tax.group.afip_kind == 'gravado':
                     alicuota_id = tax_line.tax.iva_code.rjust(4, '0')
-                    #alicuota_id = tax_line.base_code.code.rjust(4, '0')
                     importe_neto_gravado = abs(tax_line.base)
                     impuesto_liquidado = abs(tax_line.amount)
                     importe_neto_gravado = Currency.round(invoice.currency,
@@ -220,6 +218,7 @@ class CitiWizard(Wizard):
         pool = Pool()
         Invoice = pool.get('account.invoice')
         Currency = pool.get('currency.currency')
+
         invoices = Invoice.search([
             ('state', 'in', ['posted', 'paid']),
             ('type', '=', 'out'),  # Invoice, Credit Note
@@ -239,15 +238,13 @@ class CitiWizard(Wizard):
             cant_alicuota = 0
             fecha_comprobante = invoice.invoice_date.strftime("%Y%m%d")
             tipo_comprobante = invoice.invoice_type.invoice_type.rjust(3, '0')
-            punto_de_venta = invoice.number.split(
-                '-')[0].rjust(5, '0')
+            punto_de_venta = invoice.number.split('-')[0].rjust(5, '0')
             if int(tipo_comprobante) in COMPROBANTES_EXCLUIDOS:
                 punto_de_venta = ''.rjust(5, '0')  # se informan ceros
             if ':' in invoice.number:
                 parte_desde = invoice.number.split(':')[0]
                 parte_hasta = invoice.number.split(':')[1]
-                numero_comprobante = parte_desde.split(
-                    '-')[1].rjust(20, '0')
+                numero_comprobante = parte_desde.split('-')[1].rjust(20, '0')
                 numero_comprobante_hasta = parte_hasta.rjust(20, '0')
             else:
                 numero_comprobante = invoice.number.split(
@@ -416,6 +413,7 @@ class CitiWizard(Wizard):
         pool = Pool()
         Invoice = pool.get('account.invoice')
         Currency = pool.get('currency.currency')
+
         invoices = Invoice.search([
             ('state', 'in', ['posted', 'paid']),
             ('type', '=', 'in'),  # Supplier Invoice, Supplier Credit Note
@@ -442,7 +440,6 @@ class CitiWizard(Wizard):
             for tax_line in invoice.taxes:
                 if tax_line.tax.group.afip_kind == 'gravado':
                     alicuota_id = tax_line.tax.iva_code.rjust(4, '0')
-                    #alicuota_id = tax_line.base_code.code.rjust(4,'0')
                     importe_neto_gravado = abs(tax_line.base)
                     impuesto_liquidado = abs(tax_line.amount)
                     importe_neto_gravado = Currency.round(invoice.currency,
