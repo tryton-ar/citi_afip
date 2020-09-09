@@ -31,8 +31,8 @@ msgid "Period"
 msgstr "Período"
 
 msgctxt "field:citi.afip.start,proration:"
-msgid "Prorreatear Crédito Fiscal Computable Global"
-msgstr "Prorreatear Crédito Fiscal Computable Global"
+msgid "Prorratear Crédito Fiscal Computable Global"
+msgstr "Prorratear Crédito Fiscal Computable Global"
 
 msgctxt "help:account.pos,pos_do_not_report:"
 msgid ""
