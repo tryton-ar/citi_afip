@@ -12,6 +12,7 @@ from setuptools import setup
 MODULE2PREFIX = {
     'account_invoice_ar': 'trytonar',
     'party_ar': 'trytonar',
+    'subdiario': 'trytonar',
     }
 
 
@@ -54,6 +55,9 @@ LINKS = {
         (major_version, minor_version, major_version, minor_version)),
     'trytonar_party_ar': ('git+https://github.com/tryton-ar/'
         'party_ar.git@%s.%s#egg=trytonar_party_ar-%s.%s' %
+        (major_version, minor_version, major_version, minor_version)),
+    'trytonar_subdiario': ('git+https://github.com/tryton-ar/'
+        'subdiario.git@%s.%s#egg=trytonar_subdiario-%s.%s' %
         (major_version, minor_version, major_version, minor_version)),
     }
 

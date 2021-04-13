@@ -4,6 +4,7 @@
 
 from trytond.wizard import Wizard, StateView, StateTransition, Button
 from trytond.model import fields, ModelView
+from trytond.modules.subdiario import Subdiario
 from trytond.pool import Pool
 from decimal import Decimal
 from pysimplesoap.client import SimpleXMLElement
@@ -105,7 +106,7 @@ class CitiExportar(ModelView):
     alicuota_ventas = fields.Binary('Alicuota ventas', readonly=True)
 
 
-class CitiWizard(Wizard):
+class CitiWizard(Subdiario, Wizard):
     'CitiWizard'
     __name__ = 'citi.afip.wizard'
 
@@ -145,6 +146,40 @@ class CitiWizard(Wizard):
         text = text.encode('ascii', 'ignore')
         text = text.decode("utf-8")
         return str(text)
+
+    @classmethod
+    def get_secondary_rate(cls, invoice):
+        Currency = Pool().get('currency.currency')
+        if invoice.pos and invoice.pos.pos_type == 'electronic':
+            afip_tr, = [tr for tr in invoice.transactions
+                if tr.pyafipws_result=='A']
+            request = SimpleXMLElement(unidecode(afip_tr.pyafipws_xml_request))
+            if invoice.pos.pyafipws_electronic_invoice_service == 'wsfex':
+                ctz = Decimal(str(request('Moneda_ctz')))
+            elif invoice.pos.pyafipws_electronic_invoice_service == 'wsfe':
+                ctz = Decimal(str(request('MonCotiz')))
+        currency_rate = invoice.currency_rate or ctz
+        return currency_rate
+
+    @classmethod
+    def get_secondary_amount(cls, invoice, value):
+        Currency = Pool().get('currency.currency')
+        if invoice.pos and invoice.pos.pos_type == 'electronic':
+            afip_tr, = [tr for tr in invoice.transactions
+                if tr.pyafipws_result=='A']
+            request = SimpleXMLElement(unidecode(afip_tr.pyafipws_xml_request))
+            if invoice.pos.pyafipws_electronic_invoice_service == 'wsfex':
+                ctz = Decimal(str(request('Moneda_ctz')))
+            elif invoice.pos.pyafipws_electronic_invoice_service == 'wsfe':
+                ctz = Decimal(str(request('MonCotiz')))
+        currency_rate = invoice.currency_rate or ctz
+        context = dict(date=invoice.currency_date)
+        if currency_rate:
+            context['currency_rate'] = currency_rate
+        with Transaction().set_context(context):
+            amount = Currency.compute(invoice.currency, value,
+                invoice.company.currency)
+        return amount
 
     def default_start(self, fields):
         res = {}
@@ -336,10 +371,16 @@ class CitiWizard(Wizard):
             for line in invoice.lines:
                 if line.invoice_taxes is () and not line.pyafipws_exento:
                     if int(tipo_comprobante) not in [19, 20, 21, 22]:  # COMPROBANTES QUE NO CORESPONDE
-                        importe_total_lineas_sin_impuesto += abs(line.amount)
+                        if invoice.currency != invoice.company.currency:
+                            importe_total_lineas_sin_impuesto += self.get_secondary_amount(invoice, abs(line.amount))
+                        else:
+                            importe_total_lineas_sin_impuesto += abs(line.amount)
                 if line.invoice_taxes is () and line.pyafipws_exento:
                     if int(tipo_comprobante) not in [19, 20, 21, 22]:  # COMPROBANTES QUE NO CORESPONDE
-                        importe_operaciones_exentas += abs(line.amount)
+                        if invoice.currency != invoice.company.currency:
+                            importe_operaciones_exentas += self.get_secondary_amount(invoice, abs(line.amount))
+                        else:
+                            importe_operaciones_exentas += abs(line.amount)
 
             # calculo total de percepciones
             for invoice_tax in invoice.taxes:
@@ -347,7 +388,10 @@ class CitiWizard(Wizard):
                     iva_id = int(invoice_tax.tax.iva_code)
                     alicuotas[iva_id] += 1
                 elif invoice_tax.tax.group.afip_kind == 'nacional':
-                    importe_total_percepciones += invoice.currency.round(
+                    if invoice.currency != invoice.company.currency:
+                        importe_total_percepciones += self.get_secondary_amount(invoice, abs(invoice_tax.amount))
+                    else:
+                        importe_total_percepciones += invoice.currency.round(
                         abs(invoice_tax.amount))
                 elif invoice_tax.tax.group.afip_kind == 'provincial':
                     importe_total_impuesto_iibb += abs(invoice_tax.amount)
@@ -385,13 +429,8 @@ class CitiWizard(Wizard):
                     '').rjust(15, '0')
             codigo_moneda = TABLA_MONEDAS[invoice.currency.code]
             ctz = '1.00'
-            if codigo_moneda != 'PES':
-                for afip_tr in invoice.transactions:
-                    if afip_tr.pyafipws_result == 'A':
-                        request = SimpleXMLElement(unidecode(afip_tr.pyafipws_xml_request))
-                        ctz = str(request('Moneda_ctz'))
-                        break
-            ctz = Currency.round(invoice.currency, Decimal(ctz))
+            if invoice.currency != invoice.company.currency:
+                ctz = cls.get_secondary_rate(invoice)
             tipo_de_cambio =  str("%.6f" % ctz)
             tipo_de_cambio = tipo_de_cambio.replace('.',
                 '').rjust(10, '0')

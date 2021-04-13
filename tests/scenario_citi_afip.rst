@@ -74,6 +74,19 @@ Create tax IVA 21%::
     >>> supplier_tax.iva_code = '5'
     >>> supplier_tax.save()
 
+Create AFIP VAT Country::
+
+    >>> AFIPCountry = Model.get('afip.country')
+    >>> sudafrica = AFIPCountry(name='SUDAFRICA', code='159')
+    >>> sudafrica.save()
+
+    >>> AFIPVatCountry = Model.get('party.afip.vat.country')
+    >>> afip_vat_country = AFIPVatCountry()
+    >>> afip_vat_country.vat_number = '55000001715'
+    >>> afip_vat_country.afip_country = sudafrica
+    >>> afip_vat_country.type_code = '0'
+    >>> afip_vat_country.save()
+
 Create parties::
 
     >>> Party = Model.get('party.party')
@@ -81,10 +94,20 @@ Create parties::
     ...     iva_condition='responsable_inscripto',
     ...     vat_number='33333333339')
     >>> supplier.save()
+
     >>> customer = Party(name='Customer',
     ...     iva_condition='responsable_inscripto',
     ...     vat_number='30688555872')
     >>> customer.save()
+
+    >>> foreign = Party(name='Foreign',
+    ...     iva_condition='no_alcanzado')
+    >>> tax_identifier = foreign.identifiers.new()
+    >>> tax_identifier.type = 'ar_foreign'
+    >>> tax_identifier.code = '55000001715' # SUDAFRICA, Persona Jurídica
+    >>> tax_identifier.afip_country = sudafrica
+    >>> foreign.iva_condition = 'no_alcanzado'
+    >>> foreign.save()
 
 Create account category::
 
@@ -110,6 +133,12 @@ Create product::
     >>> template.account_category = account_category
     >>> template.save()
     >>> product, = template.products
+
+Get USD currency::
+
+    >>> usd = get_currency('USD')
+    >>> usd.afip_code = 'DOL'
+    >>> usd.save()
 
 Create customer invoices::
 
@@ -140,6 +169,25 @@ Create customer invoices::
     'posted'
     >>> invoice.total_amount
     Decimal('121.00')
+
+Create customer invoice for export::
+
+    >>> invoice = Invoice()
+    >>> invoice.party = foreign
+    >>> invoice.pos = pos
+    >>> invoice.currency = usd
+    >>> invoice.currency_rate = Decimal('70')
+    >>> invoice.invoice_date = period.start_date
+    >>> line = invoice.lines.new()
+    >>> line.account = revenue
+    >>> line.description = 'export'
+    >>> line.quantity = 5
+    >>> line.unit_price = Decimal('20')
+    >>> invoice.click('post')
+    >>> invoice.state
+    'posted'
+    >>> invoice.total_amount
+    Decimal('100.00')
 
 Create supplier invoices::
 
