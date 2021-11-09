@@ -309,15 +309,10 @@ class CitiWizard(Wizard):
             importe_total_percepciones_municipales = Decimal('0')  # 0
             importe_total_impuestos_internos = Decimal('0')  # 0
 
-            for line in invoice.lines:
-                if line.invoice_taxes is () and not line.pyafipws_exento:
-                    # COMPROBANTES QUE NO CORESPONDE
-                    if int(tipo_comprobante) not in [19, 20, 21, 22]:
-                        importe_total_lineas_sin_impuesto += abs(line.amount)
-                if line.invoice_taxes is () and line.pyafipws_exento:
-                    # COMPROBANTES QUE NO CORESPONDE
-                    if int(tipo_comprobante) not in [19, 20, 21, 22]:
-                        importe_operaciones_exentas += abs(line.amount)
+            # COMPROBANTES QUE NO CORESPONDE
+            if int(tipo_comprobante) not in [19, 20, 21, 22]:
+                importe_total_lineas_sin_impuesto = invoice.pyafipws_imp_tot_conc
+                importe_operaciones_exentas = invoice.pyafipws_imp_op_ex
 
             # calculo total de percepciones
             for invoice_tax in invoice.taxes:
@@ -345,7 +340,6 @@ class CitiWizard(Wizard):
             # la parte exenta se consignará en este campo, y la porción
             # gravada en el campo correspondiente del detalle de alícuotas de
             # IVA.
-            # TODO: agregar tilde para marcar que linea de factura es exenta.
             importe_operaciones_exentas = Currency.round(invoice.currency,
                 importe_operaciones_exentas).to_eng_string().replace('.',
                     '').rjust(15, '0')
@@ -531,15 +525,10 @@ class CitiWizard(Wizard):
                 abs(invoice.total_amount)).to_eng_string().replace('.',
                     '').rjust(15, '0')
 
-            for line in invoice.lines:
-                if line.invoice_taxes is () and not line.pyafipws_exento:
-                    # COMPROBANTES QUE NO CORESPONDE
-                    if int(invoice.tipo_comprobante) not in NO_CORRESPONDE:
-                        importe_total_lineas_sin_impuesto += abs(line.amount)
-                if line.invoice_taxes is () and line.pyafipws_exento:
-                    # COMPROBANTES QUE NO CORESPONDE
-                    if int(invoice.tipo_comprobante) not in NO_CORRESPONDE:
-                        importe_operaciones_exentas += abs(line.amount)
+            # COMPROBANTES QUE NO CORESPONDE
+            if int(invoice.tipo_comprobante) not in NO_CORRESPONDE:
+                importe_total_lineas_sin_impuesto = abs(invoice.pyafipws_imp_tot_conc)
+                importe_operaciones_exentas = abs(invoice.pyafipws_imp_op_ex)
 
             for invoice_tax in invoice.taxes:
                 if invoice_tax.tax.group.afip_kind == 'gravado':
@@ -559,7 +548,6 @@ class CitiWizard(Wizard):
                 invoice.currency,
                 importe_total_lineas_sin_impuesto).to_eng_string().replace(
                     '.', '').rjust(15, '0')
-            # TODO: agregar tilde para marcar linea de factura exenta.
             importe_operaciones_exentas = Currency.round(invoice.currency,
                 importe_operaciones_exentas).to_eng_string().replace('.',
                     '').rjust(15, '0')
