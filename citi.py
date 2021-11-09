@@ -153,11 +153,17 @@ class CitiWizard(Wizard):
         Currency = pool.get('currency.currency')
 
         invoices = Invoice.search([
-            ('state', 'in', ['posted', 'paid']),
-            ('type', '=', 'out'),  # Invoice, Credit Note
-            ('move.period', '=', self.start.period),
+            ('type', '=', 'out'),
             ('pos.pos_do_not_report', '=', False),
-            ], order=[('invoice_date', 'ASC'), ('id', 'ASC')])
+            ['OR', ('state', 'in', ['posted', 'paid']),
+                [('state', '=', 'cancelled'), ('number', '!=', None)]],
+            ('move.period', '=', self.start.period),
+            ], order=[
+            ('pos', 'ASC'),
+            ('invoice_date', 'ASC'),
+            ('invoice_type', 'ASC'),
+            ('number', 'ASC'),
+            ])
         lines = ""
         for invoice in invoices:
             tipo_comprobante = invoice.invoice_type.invoice_type.rjust(3, '0')
@@ -220,11 +226,17 @@ class CitiWizard(Wizard):
         Currency = pool.get('currency.currency')
 
         invoices = Invoice.search([
-            ('state', 'in', ['posted', 'paid']),
-            ('type', '=', 'out'),  # Invoice, Credit Note
-            ('move.period', '=', self.start.period),
+            ('type', '=', 'out'),
             ('pos.pos_do_not_report', '=', False),
-            ], order=[('invoice_date', 'ASC'), ('id', 'ASC')])
+            ['OR', ('state', 'in', ['posted', 'paid']),
+                [('state', '=', 'cancelled'), ('number', '!=', None)]],
+            ('move.period', '=', self.start.period),
+            ], order=[
+            ('pos', 'ASC'),
+            ('invoice_date', 'ASC'),
+            ('invoice_type', 'ASC'),
+            ('number', 'ASC'),
+            ])
         lines = ""
         for invoice in invoices:
             alicuotas = {
@@ -415,10 +427,13 @@ class CitiWizard(Wizard):
         Currency = pool.get('currency.currency')
 
         invoices = Invoice.search([
+            ('type', '=', 'in'),
             ('state', 'in', ['posted', 'paid']),
-            ('type', '=', 'in'),  # Supplier Invoice, Supplier Credit Note
             ('move.period', '=', self.start.period),
-            ], order=[('invoice_date', 'ASC'), ('id', 'ASC')])
+            ], order=[
+            ('invoice_date', 'ASC'),
+            ('id', 'ASC'),
+            ])
         lines = ""
         for invoice in invoices:
             tipo_comprobante = invoice.tipo_comprobante
@@ -466,10 +481,13 @@ class CitiWizard(Wizard):
         Currency = pool.get('currency.currency')
 
         invoices = Invoice.search([
+            ('type', '=', 'in'),
             ('state', 'in', ['posted', 'paid']),
-            ('type', '=', 'in'),  # Supplier Invoice, Supplier Credit Note
             ('move.period', '=', self.start.period),
-            ], order=[('invoice_date', 'ASC'), ('id', 'ASC')])
+            ], order=[
+            ('invoice_date', 'ASC'),
+            ('id', 'ASC'),
+            ])
         lines = ""
         for invoice in invoices:
             alicuotas = {
