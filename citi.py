@@ -543,6 +543,8 @@ class CitiWizard(Wizard):
                     importe_total_impuesto_iibb += abs(invoice_tax.amount)
                 elif invoice_tax.tax.group.afip_kind == 'interno':
                     importe_total_impuestos_internos += abs(invoice_tax.amount)
+                elif invoice_tax.tax.group.afip_kind == 'a_cuenta_del_iva':
+                    importe_total_impuesto_iva += abs(invoice_tax.amount)
 
             importe_total_lineas_sin_impuesto = Currency.round(
                 invoice.currency,
