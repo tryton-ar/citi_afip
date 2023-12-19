@@ -9,7 +9,7 @@ from unicodedata import normalize
 import logging
 
 from trytond.model import fields, ModelView
-from trytond.wizard import Wizard, StateView, StateTransition, Button
+from trytond.wizard import Wizard, StateView, Button
 from trytond.pool import Pool
 
 logger = logging.getLogger(__name__)
@@ -72,10 +72,18 @@ class CitiExportar(ModelView):
     'Compras y Ventas RG 3685'
     __name__ = 'citi.afip.exportar'
 
-    comprobante_compras = fields.Binary('Comprobante compras', readonly=True)
-    alicuota_compras = fields.Binary('Alicuota compras', readonly=True)
-    comprobante_ventas = fields.Binary('Comprobante ventas', readonly=True)
-    alicuota_ventas = fields.Binary('Alicuota ventas', readonly=True)
+    purchase_docs = fields.Binary('Comprobantes Compra',
+        filename='purchase_docs_filename', readonly=True)
+    purchase_docs_filename = fields.Char('Name')
+    purchase_aliqs = fields.Binary('Alícuotas Compra',
+        filename='purchase_aliqs_filename', readonly=True)
+    purchase_aliqs_filename = fields.Char('Name')
+    sale_docs = fields.Binary('Comprobantes Venta',
+        filename='sale_docs_filename', readonly=True)
+    sale_docs_filename = fields.Char('Name')
+    sale_aliqs = fields.Binary('Alícuotas Venta',
+        filename='sale_aliqs_filename', readonly=True)
+    sale_aliqs_filename = fields.Char('Name')
 
 
 class CitiWizard(Wizard):
@@ -85,15 +93,13 @@ class CitiWizard(Wizard):
     start = StateView('citi.afip.start',
         'citi_afip.citi_afip_start_view', [
             Button('Cancel', 'end', 'tryton-cancel'),
-            Button('Generar archivos', 'exportar_citi', 'tryton-forward',
-                True),
+            Button('Generar archivos', 'exportar', 'tryton-forward', True),
             ])
     exportar = StateView('citi.afip.exportar',
         'citi_afip.citi_afip_exportar_view', [
             Button('Volver a generar archivos', 'start', 'tryton-back'),
             Button('Close', 'end', 'tryton-close', True),
             ])
-    exportar_citi = StateTransition()
 
     @classmethod
     def strip_accents(cls, text):
@@ -120,31 +126,29 @@ class CitiWizard(Wizard):
         return res
 
     def default_exportar(self, fields):
-        comprobante_compras = self.exportar.comprobante_compras
-        alicuota_compras = self.exportar.alicuota_compras
-        comprobante_ventas = self.exportar.comprobante_ventas
-        alicuota_ventas = self.exportar.alicuota_ventas
+        logger.info('exportar CITI REG3685')
 
-        self.exportar.comprobante_compras = False
-        self.exportar.alicuota_compras = False
-        self.exportar.comprobante_ventas = False
-        self.exportar.alicuota_ventas = False
+        comprobante_compras = self.export_citi_comprobante_compras()
+        alicuota_compras = self.export_citi_alicuota_compras()
+        comprobante_ventas = self.export_citi_comprobante_ventas()
+        alicuota_ventas = self.export_citi_alicuota_ventas()
+        period = self.start.period.start_date.strftime('%Y%m')
 
         res = {
-            'comprobante_compras': comprobante_compras,
-            'alicuota_compras': alicuota_compras,
-            'comprobante_ventas': comprobante_ventas,
-            'alicuota_ventas': alicuota_ventas,
+            'purchase_docs': comprobante_compras,
+            'purchase_docs_filename':
+                '%s_REGINFO_CV_COMPRAS_CBTE.TXT' % period,
+            'purchase_aliqs': alicuota_compras,
+            'purchase_aliqs_filename':
+                '%s_REGINFO_CV_COMPRAS_ALICUOTAS.TXT' % period,
+            'sale_docs': comprobante_ventas,
+            'sale_docs_filename':
+                '%s_REGINFO_CV_VENTAS_CBTE.TXT' % period,
+            'sale_aliqs': alicuota_ventas,
+            'sale_aliqs_filename':
+                '%s_REGINFO_CV_VENTAS_ALICUOTAS.TXT' % period,
             }
         return res
-
-    def transition_exportar_citi(self):
-        logger.info('exportar CITI REG3685')
-        self.export_citi_alicuota_compras()
-        self.export_citi_comprobante_compras()
-        self.export_citi_alicuota_ventas()
-        self.export_citi_comprobante_ventas()
-        return 'exportar'
 
     def export_citi_alicuota_ventas(self):
         logger.info('exportar CITI REG3685 Alicuota Ventas')
@@ -217,7 +221,7 @@ class CitiWizard(Wizard):
                 lines += separador.join(campos) + _EOL
 
         logger.info('Comienza attach alicuota de venta')
-        self.exportar.alicuota_ventas = lines.encode('utf-8')
+        return lines.encode('utf-8')
 
     def export_citi_comprobante_ventas(self):
         logger.info('exportar CITI REG3685 Comprobante Ventas')
@@ -412,7 +416,7 @@ class CitiWizard(Wizard):
             lines += separador.join(campos) + _EOL
 
         logger.info('Comienza attach comprobante de venta')
-        self.exportar.comprobante_ventas = lines.encode('utf-8')
+        return lines.encode('utf-8')
 
     def export_citi_alicuota_compras(self):
         logger.info('exportar CITI REG3685 Comprobante Compras')
@@ -466,7 +470,7 @@ class CitiWizard(Wizard):
                     lines += separador.join(campos) + _EOL
 
         logger.info('Comienza attach alicuota de compras')
-        self.exportar.alicuota_compras = lines.encode('utf-8')
+        return lines.encode('utf-8')
 
     def export_citi_comprobante_compras(self):
         logger.info('exportar CITI REG3685 Comprobante Compras')
@@ -639,4 +643,4 @@ class CitiWizard(Wizard):
             lines += separador.join(campos) + _EOL
 
         logger.info('Comienza attach comprobante compra')
-        self.exportar.comprobante_compras = lines.encode('utf-8')
+        return lines.encode('utf-8')
