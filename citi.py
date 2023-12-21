@@ -290,9 +290,9 @@ class CitiWizard(Wizard):
                 if identificacion_comprador is None:
                     identificacion_comprador = '0'  # only "consumidor final"
                     codigo_documento_comprador = '99'  # consumidor final
-
             identificacion_comprador = identificacion_comprador.strip().rjust(
                 20, '0')
+
             if codigo_documento_comprador == '99':
                 apellido_nombre_comprador = 'VENTA GLOBAL DIARIA'.ljust(30)
             else:
@@ -446,8 +446,16 @@ class CitiWizard(Wizard):
             else:
                 punto_de_venta = '0'.rjust(5, '0')
                 numero_comprobante = invoice.ref_voucher_number.rjust(20, '0')
+
             codigo_documento_vendedor = invoice.party.tipo_documento
-            cuit_vendedor = invoice.party.vat_number.strip().rjust(20, '0')
+            if invoice.party.vat_number:
+                cuit_vendedor = invoice.party.vat_number
+            elif invoice.party.vat_number_afip_foreign:
+                cuit_vendedor = invoice.party.vat_number_afip_foreign
+            else:
+                cuit_vendedor = ''
+            cuit_vendedor = cuit_vendedor.strip().rjust(20, '0')
+
             importe_neto_gravado = Decimal('0')
             impuesto_liquidado = Decimal('0')
             for tax_line in invoice.taxes:
@@ -520,8 +528,15 @@ class CitiWizard(Wizard):
             despacho_importacion = ''.ljust(16)
 
             codigo_documento_vendedor = invoice.party.tipo_documento
-            identificacion_vendedor = invoice.party.vat_number.strip().rjust(
+            if invoice.party.vat_number:
+                identificacion_vendedor = invoice.party.vat_number
+            elif invoice.party.vat_number_afip_foreign:
+                identificacion_vendedor = invoice.party.vat_number_afip_foreign
+            else:
+                identificacion_vendedor = ''
+            identificacion_vendedor = identificacion_vendedor.strip().rjust(
                 20, '0')
+
             s = self.strip_accents(invoice.party.name[:30])
             apellido_nombre_vendedor = ''.join(
                 x for x in s if x.isalnum()).ljust(30)
