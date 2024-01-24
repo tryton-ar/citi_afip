@@ -438,11 +438,6 @@ class CitiWizard(Wizard):
             if int(invoice.tipo_comprobante) not in COMPROBANTES_EXCLUIDOS:
                 punto_de_venta = invoice.ref_pos_number.rjust(5, '0')
                 numero_comprobante = invoice.ref_voucher_number.rjust(20, '0')
-                assert (int(punto_de_venta) > 0 and
-                    int(punto_de_venta) < 9998), ('Punto de venta'
-                    ' debe ser mayor o igual a "00001" y menor a "09998"!\n'
-                    '- Number: %s\n- Reference: %s\n' % (
-                        invoice.number, invoice.reference))
             else:
                 punto_de_venta = '0'.rjust(5, '0')
                 numero_comprobante = invoice.ref_voucher_number.rjust(20, '0')
