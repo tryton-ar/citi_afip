@@ -202,24 +202,6 @@ class CitiWizard(Wizard):
                     separador = self.start.csv_format and _SEPARATOR or ''
                     lines += separador.join(campos) + _EOL
 
-            # factura de exportacion
-            # no tiene alicuota, pero se informa con alicuota 0%
-            if tipo_comprobante in ['019']:
-                alicuota_id = '3'.rjust(4, '0')
-                importe_neto_gravado = abs(invoice.total_amount)
-                impuesto_liquidado = Decimal('0')
-                importe_neto_gravado = Currency.round(invoice.currency,
-                    importe_neto_gravado).to_eng_string().replace(
-                        '.', '').rjust(15, '0')
-                impuesto_liquidado = Currency.round(invoice.currency,
-                    impuesto_liquidado).to_eng_string().replace(
-                        '.', '').rjust(15, '0')
-                campos = [tipo_comprobante, punto_de_venta,
-                    numero_comprobante, importe_neto_gravado, alicuota_id,
-                    impuesto_liquidado]
-                separador = self.start.csv_format and _SEPARATOR or ''
-                lines += separador.join(campos) + _EOL
-
         logger.info('Comienza attach alicuota de venta')
         return lines.encode('utf-8')
 
