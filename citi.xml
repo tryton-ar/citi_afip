@@ -2,8 +2,7 @@
 <tryton>
     <data>
 
-<!-- RG3685 Wizard -->
-
+        <!-- RG3685 Wizard -->
         <record model="ir.ui.view" id="citi_afip_start_view">
             <field name="model">citi.afip.start</field>
             <field name="type">form</field>
