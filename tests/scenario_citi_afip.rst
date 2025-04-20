@@ -4,21 +4,24 @@ RG3685 AFIP Scenario
 
 Imports::
     >>> import datetime
+    >>> import io
+    >>> from trytond.tools import file_open
+    >>> from dateutil.relativedelta import relativedelta
     >>> from decimal import Decimal
     >>> from operator import attrgetter
     >>> from proteus import Model, Wizard
     >>> from trytond.tests.tools import activate_modules
-    >>> from trytond.tools import file_open
     >>> from trytond.modules.company.tests.tools import create_company, \
     ...     get_company
     >>> from trytond.modules.currency.tests.tools import get_currency
     >>> from trytond.modules.account.tests.tools import create_fiscalyear, \
-    ...     create_chart, get_accounts, create_tax
+    ...     create_chart, get_accounts, create_tax, create_tax_code
     >>> from trytond.modules.account_invoice.tests.tools import \
     ...     set_fiscalyear_invoice_sequences
     >>> from trytond.modules.account_invoice_ar.tests.tools import \
-    ...     create_pos, get_invoice_types, get_pos, create_tax_groups
+    ...     create_pos, get_invoice_types, get_pos, get_tax_group
     >>> today = datetime.date.today()
+    >>> year = datetime.date(2020, 1, 1)
 
 Install account_invoice::
 
@@ -27,6 +30,8 @@ Install account_invoice::
 Create company::
 
     >>> currency = get_currency('ARS')
+    >>> currency.afip_code = 'PES'
+    >>> currency.save()
     >>> _ = create_company(currency=currency)
     >>> company = get_company()
     >>> tax_identifier = company.party.identifiers.new()
@@ -38,7 +43,7 @@ Create company::
 Create fiscal year::
 
     >>> fiscalyear = set_fiscalyear_invoice_sequences(
-    ...     create_fiscalyear(company, datetime.date(2019, 1, 1)))
+    ...     create_fiscalyear(company, year))
     >>> fiscalyear.click('create_period')
     >>> period = fiscalyear.periods[0]
     >>> period_ids = [p.id for p in fiscalyear.periods]
@@ -59,20 +64,63 @@ Create point of sale::
     >>> pos = get_pos()
     >>> invoice_types = get_invoice_types()
 
-Create tax groups::
+Get tax group IVA Ventas Gravado::
 
-    >>> tax_groups = create_tax_groups()
+    >>> tax_group_sale_gravado = get_tax_group('IVA', 'sale', 'gravado')
 
-Create tax IVA 21%::
+    >>> tax_group_purchase_gravado = get_tax_group('IVA', 'purchase', 'gravado')
 
+Get tax group IVA Ventas No Gravado::
+
+    >>> tax_group_no_gravado = get_tax_group('IVA', 'purchase', 'no_gravado')
+
+Create customer tax IVA 21%::
+
+    >>> TaxCode = Model.get('account.tax.code')
     >>> customer_tax = create_tax(Decimal('.21'))
-    >>> customer_tax.group = tax_groups['gravado']
     >>> customer_tax.iva_code = '5'
+    >>> customer_tax.group = tax_group_sale_gravado
     >>> customer_tax.save()
+    >>> invoice_base_code = create_tax_code(customer_tax, 'base', 'invoice')
+    >>> invoice_base_code.save()
+    >>> invoice_tax_code = create_tax_code(customer_tax, 'tax', 'invoice')
+    >>> invoice_tax_code.save()
+    >>> credit_note_base_code = create_tax_code(customer_tax, 'base', 'credit')
+    >>> credit_note_base_code.save()
+    >>> credit_note_tax_code = create_tax_code(customer_tax, 'tax', 'credit')
+    >>> credit_note_tax_code.save()
+
+Create supplier tax IVA 21%::
+
+    >>> TaxCode = Model.get('account.tax.code')
     >>> supplier_tax = create_tax(Decimal('.21'))
-    >>> supplier_tax.group = tax_groups['gravado']
     >>> supplier_tax.iva_code = '5'
+    >>> supplier_tax.group = tax_group_purchase_gravado
     >>> supplier_tax.save()
+    >>> invoice_base_code = create_tax_code(supplier_tax, 'base', 'invoice')
+    >>> invoice_base_code.save()
+    >>> invoice_tax_code = create_tax_code(supplier_tax, 'tax', 'invoice')
+    >>> invoice_tax_code.save()
+    >>> credit_note_base_code = create_tax_code(supplier_tax, 'base', 'credit')
+    >>> credit_note_base_code.save()
+    >>> credit_note_tax_code = create_tax_code(supplier_tax, 'tax', 'credit')
+    >>> credit_note_tax_code.save()
+
+Create tax IVA No gravado::
+
+    >>> TaxCode = Model.get('account.tax.code')
+    >>> tax_ = create_tax(Decimal('0.0'))
+    >>> tax_.iva_code = '1'
+    >>> tax_.group = tax_group_no_gravado
+    >>> tax_.save()
+    >>> invoice_base_code_ = create_tax_code(tax_, 'base', 'invoice')
+    >>> invoice_base_code_.save()
+    >>> invoice_tax_code_ = create_tax_code(tax_, 'tax', 'invoice')
+    >>> invoice_tax_code_.save()
+    >>> credit_note_base_code_ = create_tax_code(tax_, 'base', 'credit')
+    >>> credit_note_base_code_.save()
+    >>> credit_note_tax_code_ = create_tax_code(tax_, 'tax', 'credit')
+    >>> credit_note_tax_code_.save()
 
 Create parties::
 
@@ -183,6 +231,7 @@ Create supplier invoices::
     >>> line.description = 'Test'
     >>> line.quantity = 5
     >>> line.unit_price = Decimal('20')
+    >>> line.taxes.append(tax_)
     >>> invoice.click('validate_invoice')
     >>> invoice.state
     'validated'
@@ -200,7 +249,7 @@ Create supplier invoices::
     >>> invoice.untaxed_amount
     Decimal('100.00')
     >>> invoice.tax_amount
-    Decimal('0')
+    Decimal('0.00')
     >>> invoice.total_amount
     Decimal('100.00')
 
@@ -210,22 +259,19 @@ Generate rg3685 report::
     >>> rg3685 = Wizard('citi.afip.wizard')
     >>> rg3685.form.csv_format = False
     >>> rg3685.form.period = period
-    >>> rg3685.execute('exportar_citi')
+    >>> rg3685.execute('exportar')
     >>> rg3685.state
-    'exportar_citi'
-    >>> # rg3685.form.comprobante_ventas
-    >>> # rg3685.form.alicuota_ventas
-    >>> # rg3685.form.comprobante_compras
-    >>> # rg3685.form.alicuota_compras
+    'exportar'
+    >>> # rg3685.form.sale_docs
     >>> with file_open('citi_afip/tests/VENTAS_RG3685.txt', 'rb') as f:
-    ...     rg3685.form.comprobante_ventas == f.read()
+    ...     rg3685.form.sale_docs == f.read()
     True
     >>> with file_open('citi_afip/tests/VENTAS_ALICUOTAS_RG3685.txt', 'rb') as f:
-    ...     rg3685.form.alicuota_ventas == f.read()
+    ...     rg3685.form.sale_aliqs == f.read()
     True
     >>> with file_open('citi_afip/tests/COMPRAS_ALICUOTAS_RG3685.txt', 'rb') as f:
-    ...     rg3685.form.alicuota_compras == f.read()
+    ...     rg3685.form.purchase_aliqs == f.read()
     True
     >>> with file_open('citi_afip/tests/COMPRAS_RG3685.txt', 'rb') as f:
-    ...     rg3685.form.comprobante_compras == f.read()
+    ...     rg3685.form.purchase_docs == f.read()
     True
