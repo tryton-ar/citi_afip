@@ -2,25 +2,5 @@
 <tryton>
     <data>
 
-        <!-- RG3685 Wizard -->
-        <record model="ir.ui.view" id="citi_afip_start_view">
-            <field name="model">citi.afip.start</field>
-            <field name="type">form</field>
-            <field name="name">citi_afip_start_view</field>
-        </record>
-        <record model="ir.ui.view" id="citi_afip_exportar_view">
-            <field name="model">citi.afip.exportar</field>
-            <field name="type">form</field>
-            <field name="name">citi_afip_exportar_view</field>
-        </record>
-
-        <record model="ir.action.wizard" id="wizard_citi_afip">
-            <field name="name">Compras y Ventas RG 3685</field>
-            <field name="wiz_name">citi.afip.wizard</field>
-        </record>
-
-        <menuitem parent="account.menu_reporting" action="wizard_citi_afip"
-            id="menu_account_citi_afip_start" icon="tryton-export"/>
-
     </data>
 </tryton>
