@@ -507,6 +507,7 @@ class CitiWizard(Wizard):
             importe_total_impuesto_iibb = Decimal('0')  # se calcula
             importe_total_percepciones_municipales = Decimal('0')  # 0
             importe_total_impuestos_internos = Decimal('0')  # 0
+            comprobante_no_corresponde = True
 
             fecha_comprobante = invoice.invoice_date.strftime("%Y%m%d")
             tipo_comprobante = invoice.tipo_comprobante
@@ -534,8 +535,7 @@ class CitiWizard(Wizard):
             if int(invoice.tipo_comprobante) not in NO_CORRESPONDE:
                 importe_total_lineas_sin_impuesto = abs(invoice.pyafipws_imp_tot_conc)
                 importe_operaciones_exentas = abs(invoice.pyafipws_imp_op_ex)
-                cant_alicuota = 0
-                comprobante_no_corresponde = True
+                comprobante_no_corresponde = False
 
             for invoice_tax in invoice.taxes:
                 if invoice_tax.tax.group.afip_kind == 'gravado':
