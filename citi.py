@@ -430,9 +430,6 @@ class CitiWizard(Wizard):
             ])
         lines = ""
         for invoice in invoices:
-            ## Si mi comprobante es de clase B o C no se informa.
-            if int(invoice.tipo_comprobante) in NO_CORRESPONDE:
-                continue
             tipo_comprobante = invoice.tipo_comprobante
             if int(invoice.tipo_comprobante) not in COMPROBANTES_EXCLUIDOS:
                 punto_de_venta = invoice.ref_pos_number.rjust(5, '0')
@@ -450,7 +447,7 @@ class CitiWizard(Wizard):
             importe_neto_gravado = Decimal('0')
             impuesto_liquidado = Decimal('0')
             for tax_line in invoice.taxes:
-                if tax_line.tax.group.afip_kind in ['gravado','no_gravado', 'exento']:
+                if tax_line.tax.group.afip_kind == 'gravado':
                     alicuota_id = tax_line.tax.iva_code.rjust(4, '0')
                     importe_neto_gravado = abs(tax_line.base)
                     impuesto_liquidado = abs(tax_line.amount)
@@ -488,8 +485,6 @@ class CitiWizard(Wizard):
         lines = ""
         for invoice in invoices:
             alicuotas = {
-                1: 0,
-                2: 0,
                 3: 0,
                 4: 0,
                 5: 0,
@@ -534,21 +529,9 @@ class CitiWizard(Wizard):
             if int(invoice.tipo_comprobante) not in NO_CORRESPONDE:
                 importe_total_lineas_sin_impuesto = abs(invoice.pyafipws_imp_tot_conc)
                 importe_operaciones_exentas = abs(invoice.pyafipws_imp_op_ex)
-                cant_alicuota = 0
-                comprobante_no_corresponde = True
 
             for invoice_tax in invoice.taxes:
                 if invoice_tax.tax.group.afip_kind == 'gravado':
-                    iva_id = int(invoice_tax.tax.iva_code)
-                    alicuotas[iva_id] += 1
-                    total_impuesto_iva += invoice.currency.round(
-                        abs(invoice_tax.amount))
-                elif invoice_tax.tax.group.afip_kind == 'no_gravado':
-                    iva_id = int(invoice_tax.tax.iva_code)
-                    alicuotas[iva_id] += 1
-                    total_impuesto_iva += invoice.currency.round(
-                        abs(invoice_tax.amount))
-                elif invoice_tax.tax.group.afip_kind == 'exento':
                     iva_id = int(invoice_tax.tax.iva_code)
                     alicuotas[iva_id] += 1
                     total_impuesto_iva += invoice.currency.round(
@@ -600,12 +583,7 @@ class CitiWizard(Wizard):
                 if value != 0:
                     cant_alicuota += 1
 
-            if comprobante_no_corresponde:
-                cant_alicuota = 0
-                cantidad_alicuotas = '0'
-            else:
-                cantidad_alicuotas = str(cant_alicuota)
-
+            cantidad_alicuotas = str(cant_alicuota)
             if cant_alicuota == 0:
                 cantidad_alicuotas = '1'
                 # Factura E
