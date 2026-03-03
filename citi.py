@@ -373,6 +373,9 @@ class CitiWizard(Wizard):
                 # Operacion exenta
                 elif invoice.company.party.iva_condition == 'exento':
                     codigo_operacion = 'E'  # Operaciones exentas
+            elif cant_alicuota == 1 and alicuotas[3] > 0:
+                # Se agrego una sola alicuota y es IVA 0%.
+                codigo_operacion = 'E'
             else:
                 # Segun tabla codigo de operaciones
                 codigo_operacion = ' '
@@ -594,6 +597,9 @@ class CitiWizard(Wizard):
                     codigo_operacion = 'E'  # Operaciones exentas
                 else:
                     codigo_operacion = 'N'  # No gravado
+            elif cant_alicuota == 1 and alicuotas[3] > 0:
+                # Se agrego una sola alicuota y es IVA 0%.
+                codigo_operacion = 'E'
             else:
                 # Segun tabla codigo de operaciones
                 codigo_operacion = ' '
