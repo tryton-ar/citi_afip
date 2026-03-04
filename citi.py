@@ -362,10 +362,9 @@ class CitiWizard(Wizard):
 
             cantidad_alicuotas = str(cant_alicuota)
             if cant_alicuota == 0:
-                cantidad_alicuotas = '1'
                 # Factura E
                 if int(invoice.invoice_type.invoice_type) in [19, 20, 21, 22]:
-                    codigo_operacion = 'X'  # Exportaciones del exterior
+                    codigo_operacion = 'X'  # Exportaciones al exterior
                 # Clase C
                 elif int(invoice.invoice_type.invoice_type) in [
                         11, 12, 13, 15, 211, 212, 213]:
@@ -584,14 +583,12 @@ class CitiWizard(Wizard):
 
             cantidad_alicuotas = str(cant_alicuota)
             if cant_alicuota == 0:
-                cantidad_alicuotas = '1'
                 # Factura E
                 if int(invoice.tipo_comprobante) in [19, 20, 21, 22]:
                     codigo_operacion = 'X'  # Importaciones del exterior
                 # Comprobantes clase C/B
                 elif int(invoice.tipo_comprobante) in NO_CORRESPONDE:
                     codigo_operacion = 'N'  # No gravado
-                    cantidad_alicuotas = '0'
                 # Operacion exenta
                 elif invoice.party.iva_condition == 'exento':
                     codigo_operacion = 'E'  # Operaciones exentas
